@@ -20,11 +20,23 @@ namespace DotNetCoreWebApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Workflow>>> GetWorkflows()
         {
-            return await _context.Workflows
-                .Include(w => w.CreatedByUser)  // Eager-load creator
-                .Include(w => w.WorkflowProcesses)  // Eager-load sequences
-                    .ThenInclude(wp => wp.DnaProcess)
+            var workflows = await _context.Workflows
+                .Include(w => w.CreatedByUser)
+                .Select(w => new
+                {
+                    w.Id,
+                    w.Name,
+                    CreatedByUser = new { w.CreatedByUser.Id, w.CreatedByUser.UserName },
+                    WorkflowProcesses = w.WorkflowProcesses.OrderBy(wp => wp.ProcessOrder).Select(wp => new
+                    {
+                        wp.Id,
+                        wp.ProcessOrder,
+                        DnaProcess = new { wp.DnaProcess.Id, wp.DnaProcess.Name }
+                    })
+                })
                 .ToListAsync();
+
+            return Ok(workflows);
         }
 
         // GET: api/workflows/5
@@ -32,20 +44,49 @@ namespace DotNetCoreWebApi.Controllers
         public async Task<ActionResult<Workflow>> GetWorkflow(int id)
         {
             var workflow = await _context.Workflows
-                .Include(w => w.WorkflowProcesses.OrderBy(wp => wp.ProcessOrder))
-                    .ThenInclude(wp => wp.DnaProcess)
-                .FirstOrDefaultAsync(w => w.Id == id);
+                .Include(w => w.CreatedByUser)
+                .Where(w => w.Id == id)
+                .Select(w => new
+                {
+                    w.Id,
+                    w.Name,
+                    CreatedByUser = new { w.CreatedByUser.Id, w.CreatedByUser.UserName },
+                    WorkflowProcesses = w.WorkflowProcesses.OrderBy(wp => wp.ProcessOrder).Select(wp => new
+                    {
+                        wp.Id,
+                        wp.ProcessOrder,
+                        DnaProcess = new { wp.DnaProcess.Id, wp.DnaProcess.Name }
+                    })
+                })
+                .FirstOrDefaultAsync();
+
             if (workflow == null) return NotFound();
-            return workflow;
+            return Ok(workflow);
         }
 
         // POST: api/workflows
         [HttpPost]
-        public async Task<ActionResult<Workflow>> PostWorkflow(Workflow workflow)
+        public async Task<ActionResult<object>> PostWorkflow([FromBody] CreateWorkflowDto dto)
         {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var workflow = new Workflow
+            {
+                Name = dto.Name,
+                CreatedBy = dto.CreatedBy
+            };
             _context.Workflows.Add(workflow);
-            await _context.SaveChangesAsync();  // Save to get Id
-            return CreatedAtAction(nameof(GetWorkflow), new { id = workflow.Id }, workflow);
+            await _context.SaveChangesAsync();
+
+            // Project response to avoid cycle
+            var response = new
+            {
+                workflow.Id,
+                workflow.Name,
+                CreatedByUser = new { CreatedBy = dto.CreatedBy }  // Scalar only; load full via GET if needed
+            };
+
+            return CreatedAtAction(nameof(GetWorkflow), new { id = workflow.Id }, response);
         }
 
         // POST: api/workflows/{id}/add-process - Custom action for sequencing
@@ -97,6 +138,12 @@ namespace DotNetCoreWebApi.Controllers
             _context.Workflows.Remove(workflow);
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+
+        public class AddProcessDto
+        {
+            public int DnaProcessId { get; set; }
+            public int ProcessOrder { get; set; }
         }
 
         private bool WorkflowExists(int id) => _context.Workflows.Any(e => e.Id == id);

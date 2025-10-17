@@ -154,4 +154,15 @@ namespace DotNetCoreWebApi.Models
         public int Prop1 { get; set; }
         public int Prop2 { get; set; }
     }
+
+    #region // DTOs
+    public class CreateWorkflowDto
+    {
+        [Required, MaxLength(255)]
+        public string Name { get; set; } = string.Empty;
+        [Required]
+        public int CreatedBy { get; set; }
+    }
+
+    #endregion
 }
