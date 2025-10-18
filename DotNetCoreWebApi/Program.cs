@@ -17,6 +17,13 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddCors(options => {
+    options.AddDefaultPolicy(policy => policy
+        .AllowAnyOrigin()  // Or .WithOrigins("http://localhost:3000") for security
+        .AllowAnyMethod()
+        .AllowAnyHeader());
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -27,7 +34,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DNA Workflow API v1"));  // UI
 }
 
+
 app.UseHttpsRedirection();
+app.UseCors();  // Enable CORS
 app.UseAuthorization();
 app.MapControllers();  // Maps routes like /api/workflowgroups
 
