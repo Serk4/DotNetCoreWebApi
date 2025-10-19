@@ -16,24 +16,38 @@ namespace DotNetCoreWebApi.Controllers
             _context = context;
         }
 
-        // GET: api/dnaprocesses
+        // GET: api/dnaprocesses (fixed: projection)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<DnaProcess>>> GetDnaProcesses()
+        public async Task<ActionResult<IEnumerable<object>>> GetDnaProcesses()
         {
-            return await _context.DnaProcesses
-                .Include(dp => dp.CreatedByUser) // Eager-load CreatedByUser
+            var processes = await _context.DnaProcesses
+                .Select(dp => new
+                {
+                    dp.Id,
+                    dp.Name,
+                    CreatedByUser = new { dp.CreatedByUser.Id, dp.CreatedByUser.UserName }  // Scalar only
+                })
                 .ToListAsync();
+
+            return Ok(processes);
         }
 
-        // GET: api/dnaprocesses/5
+        // GET: api/dnaprocesses/5 (fixed: projection)
         [HttpGet("{id}")]
-        public async Task<ActionResult<DnaProcess>> GetDnaProcess(int id)
+        public async Task<ActionResult<object>> GetDnaProcess(int id)
         {
             var dnaProcess = await _context.DnaProcesses
-                .Include(dp => dp.CreatedByUser) // Eager-load CreatedByUser
-                .FirstOrDefaultAsync(dp => dp.Id == id);
+                .Where(dp => dp.Id == id)
+                .Select(dp => new
+                {
+                    dp.Id,
+                    dp.Name,
+                    CreatedByUser = new { dp.CreatedByUser.Id, dp.CreatedByUser.UserName }
+                })
+                .FirstOrDefaultAsync();
+
             if (dnaProcess == null) return NotFound();
-            return dnaProcess;
+            return Ok(dnaProcess);
         }
 
         // POST: api/dnaprocesses
