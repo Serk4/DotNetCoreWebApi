@@ -1,6 +1,6 @@
 # DNA Workflow API Showcase
 
-![DNA Double Helix](https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=200&fit=crop&crop=center)
+
 
 This repository demonstrates a scalable database schema and RESTful API for managing DNA lab workflows, built with .NET 9, Entity Framework Core, and SQL Server. The goal is to showcase **data modeling for complex lab processes** (e.g., ordered sequences of extraction, amplification, quantification), **RESTful endpoints** for CRUD and custom operations, and future integration with a modern frontend like **React** (my first dive into it!).
 
@@ -12,6 +12,23 @@ Inspired by real-world lab management needs, this app lets users define reusable
 - **Seeded Data**: Baseline with 4 users (Admin, Technicians, Analyst), 3 processes, 1 default workflow with ordered steps, and a sample run with worksheets/step props.
 - **No Cascade Cycles**: FKs configured with `ON DELETE NO ACTION` to prevent SQL Server errors in complex deletes.
 - **Future Frontend**: Planning a React single-page app for intuitive UI (e.g., drag-drop process sequencing, real-time run tracking). This repo focuses on backend; frontend branch coming soon!
+
+## Frontend
+The repository includes a React frontend stub in the `/client` folder to showcase API integration. It fetches and displays the seeded users in a simple table, demonstrating live data loading from the backend.
+
+### How to Run the Frontend
+1. **Install Dependencies** (in repo root):
+cd client
+npm install
+
+2. **Start the React App**:
+npm start
+- Opens http://localhost:3000—shows the Users table populated from `/api/users`.
+- Ensure the API is running (`dotnet run`) for data.
+
+3. **Tech**: Create React App with TypeScript, Axios for API calls. Expandable for full UI (e.g., workflow builder).
+
+See `/client/src/App.tsx` for the Users component. Future: Add forms for CRUD, routing, and styling (e.g., Material-UI).
 
 ## Schema Overview
 The core is a hierarchical model:
@@ -26,7 +43,6 @@ ERD (generated from dbdiagram.io):
 [User] --(createdBy)--> [DnaProcess] <--(dnaProcessId)-- [Worksheet] --(worksheetId)--> [Extraction|Amplification|Quantification]
 [User] --(createdBy)--> [Workflow] --(workflowId)--> [WorkflowGroup] --(workflowGroupId)--> [WorksheetWorkflowGroup] <--(worksheetId)-- [Worksheet]
 [Workflow] --(workflowId)--> [WorkflowProcess] --(dnaProcessId)--> [DnaProcess]
-
 
 See `dbdiagram.io` link in commit history for full DBML.
 
@@ -57,26 +73,32 @@ Swagger: [localhost:7049/swagger](https://localhost:7049/swagger) (dev mode).
 - **Backend**: .NET 9, ASP.NET Core Web API, EF Core 8+ (code-first migrations).
 - **Database**: SQL Server (LocalDB for dev; conn in appsettings.json).
 - **Tools**: Swagger for docs/testing, dbdiagram.io for ERD.
-- **Frontend (Planned)**: React (with Axios for API calls, React Router for pages like Workflow Builder).
+- **Frontend**: React (with Axios for API calls, React Router for pages like Workflow Builder).
 
 ## How to Run
 1. **Clone & Restore**:
-git clone <your-repo>
+2. git clone <your-repo-name.git>
 cd DotNetCoreWebApi
 dotnet restore
 
 2. **Update DB** (runs migrations + seed):
 dotnet ef database update
 
-4. **Run**:
+3. **Run Backend**:
 dotnet run
-- API at `https://localhost:7049`.
+   - API at `https://localhost:7049`.
 - Swagger at `https://localhost:7049/swagger`.
 
-4. **Test**: Use Swagger to POST a workflow, add processes, and GET the report.
+4. **Run Frontend**:
+cd client
+npm install
+npm start
+- App at `http://localhost:3000`
+
+5. **Test**: Use Swagger for API, React for UI. CORS enabled for local dev.
 
 ## Future Plans
-- **React Frontend**: Single-page app for workflow builder (drag-drop processes), run dashboard, and real-time sharing.
+- **React Frontend**: Expand to workflow builder (drag-drop processes), run dashboard, and real-time sharing.
 - **Auth**: JWT with role-based access (e.g., Analysts only for worksheets).
 - **Advanced**: Batch process addition, workflow validation (e.g., required steps), file uploads for lab data.
 - **Deployment**: Docker + Azure/AWS for scalability.
