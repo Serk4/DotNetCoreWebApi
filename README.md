@@ -1,6 +1,6 @@
 # DNA Workflow API Showcase
 
-![DNA Double Helix](https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=200&fit=crop&crop=center)
+
 
 This repository demonstrates a scalable database schema and RESTful API for managing DNA lab workflows, built with .NET 9, Entity Framework Core, and SQL Server. The goal is to showcase **data modeling for complex lab processes** (e.g., ordered sequences of extraction, amplification, quantification), **RESTful endpoints** for CRUD and custom operations, and future integration with a modern frontend like **React** (my first dive into it!).
 
