@@ -1,51 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
-interface User {
-    id: number;
-    userName: string;
-    email: string;
-    userType: number;  // 0=Admin, 1=Technician, 2=Analyst
-}
+import React, { useState } from 'react';
+import 'bootswatch/dist/cerulean/bootstrap.min.css'; // Bootswatch theme (cerulean). Change to another theme if desired.
+import UsersList from './components/UsersList';
+import DnaProcessesList from './components/DnaProcessesList';
+import WorkflowsList from './components/WorkflowsList';
 
 const App: React.FC = () => {
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [view, setView] = useState<'home' | 'users' | 'dnaProcesses' | 'workflows'>('home');
 
-    useEffect(() => {
-        axios.get<User[]>('https://localhost:7049/api/users')  // Your API (update port if different)
-            .then(res => setUsers(res.data))
-            .catch(ex => console.error('API error:', ex))
-            .finally(() => setLoading(false));
-    }, []);
+    const renderHome = () => (
+        <div className="p-4">
+            <h1>DNA Workflow</h1>
+            <p>Welcome — use the navigation to view users and other pages.</p>
+        </div>
+    );
 
-    if (loading) return <div>Loading users...</div>;
+    const navButtonClass = (active: boolean) => `btn btn-sm ${active ? 'btn-primary' : 'btn-outline-secondary'} me-2`;
 
     return (
-        <div style={{ padding: '20px' }}>
-            <h1>DNA Workflow Users</h1>
-            <table style={{ borderCollapse: 'collapse', width: '100%', border: '1px solid #ddd' }}>
-                <thead>
-                    <tr>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>ID</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Username</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Email</th>
-                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Type</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {users.map(user => (
-                        <tr key={user.id}>
-                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{user.id}</td>
-                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{user.userName}</td>
-                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{user.email}</td>
-                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                {user.userType === 0 ? 'Admin' : user.userType === 1 ? 'Technician' : 'Analyst'}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+        <div>
+            <nav className="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div className="container-fluid">
+                    <span className="navbar-brand fw-semibold">DNA Workflow</span>
+                    <div className="d-flex">
+                        <button
+                            onClick={() => setView('home')}
+                            aria-pressed={view === 'home'}
+                            className={navButtonClass(view === 'home')}
+                        >
+                            Home
+                        </button>
+                        <button
+                            onClick={() => setView('users')}
+                            aria-pressed={view === 'users'}
+                            className={navButtonClass(view === 'users')}
+                        >
+                            Users
+                        </button>
+                        <button
+                            onClick={() => setView('dnaProcesses')}
+                            aria-pressed={view === 'dnaProcesses'}
+                            className={navButtonClass(view === 'dnaProcesses')}
+                        >
+                            DNA Processes
+                        </button>
+                        <button
+                            onClick={() => setView('workflows')}
+                            aria-pressed={view === 'workflows'}
+                            className={navButtonClass(view === 'workflows')}
+                        >
+                            Workflows
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <main>
+                {view === 'users' && <UsersList />}
+                {view === 'dnaProcesses' && <DnaProcessesList />}
+                {view === 'workflows' && <WorkflowsList />}
+                {view === 'home' && renderHome()}
+            </main>
         </div>
     );
 };

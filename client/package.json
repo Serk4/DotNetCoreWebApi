@@ -12,14 +12,22 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "axios": "^1.12.2",
+    "bootstrap": "^5.3.2",
+    "bootswatch": "^5.3.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
   "scripts": {
     "start": "react-scripts start",
+    "start:client": "react-scripts start",
+    "start:api": "dotnet run --project ../DotNetCoreWebApi",
+    "start:all": "concurrently \"npm: start:api\" \"npm: start:client\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

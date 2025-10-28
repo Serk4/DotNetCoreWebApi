@@ -1,6 +1,8 @@
 using DotNetCoreWebApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.FileProviders;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,11 +36,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DNA Workflow API v1"));  // UI
 }
 
-
 app.UseHttpsRedirection();
 app.UseCors();  // Enable CORS
 app.UseAuthorization();
 app.MapControllers();  // Maps routes like /api/workflowgroups
 
+// Serve single-page React app if built files are present in wwwroot
+// (Copy the React build output into DotNetCoreWebApi/wwwroot)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+app.MapFallbackToFile("index.html");
 
 app.Run();
