@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import 'bootswatch/dist/cerulean/bootstrap.min.css'; // Bootswatch theme (cerulean). Change to another theme if desired.
 import UsersList from './components/UsersList';
 import DnaProcessesList from './components/DnaProcessesList';
 import WorkflowsList from './components/WorkflowsList';
