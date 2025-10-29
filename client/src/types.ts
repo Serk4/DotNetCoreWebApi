@@ -8,27 +8,18 @@ export interface User {
 export interface DnaProcess {
     id: number;
     name: string;
-    createdByUser?: {
-        id: number;
-        userName: string;
-    } | null;
+    createdByUser?: User | null;
 }
 
 export interface WorkflowProcess {
     id: number;
     processOrder: number;
-    dnaProcess: {
-        id: number;
-        name: string;
-    };
+    dnaProcess?: DnaProcess | null;
 }
 
 export interface Workflow {
     id: number;
     name: string;
-    createdByUser?: {
-        id: number;
-        userName: string;
-    } | null;
-    workflowProcesses: WorkflowProcess[];
+    createdByUser?: User | null;
+    workflowProcesses?: WorkflowProcess[];
 }

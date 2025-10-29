@@ -18,7 +18,7 @@ namespace DotNetCoreWebApi.Controllers
 
         // GET: api/workflows
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Workflow>>> GetWorkflows()
+        public async Task<ActionResult<IEnumerable<object>>> GetWorkflows()
         {
             var workflows = await _context.Workflows
                 .Include(w => w.CreatedByUser)
@@ -41,7 +41,7 @@ namespace DotNetCoreWebApi.Controllers
 
         // GET: api/workflows/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Workflow>> GetWorkflow(int id)
+        public async Task<ActionResult<object>> GetWorkflow(int id)
         {
             var workflow = await _context.Workflows
                 .Include(w => w.CreatedByUser)
@@ -111,6 +111,74 @@ namespace DotNetCoreWebApi.Controllers
             return NoContent();
         }
 
+        // PUT: api/workflows/{id}/processes
+        // Replace the workflow's ordered process list in a single request.
+        [HttpPut("{id}/processes")]
+        public async Task<IActionResult> ReplaceWorkflowProcesses(int id, [FromBody] ReplaceProcessesDto dto)
+        {
+            if (dto == null || dto.DnaProcessIds == null)
+                return BadRequest("Payload missing");
+
+            // Validate workflow exists
+            var workflow = await _context.Workflows
+                .Include(w => w.WorkflowProcesses)
+                .FirstOrDefaultAsync(w => w.Id == id);
+
+            if (workflow == null) return NotFound();
+
+            // Validate dna process ids are unique
+            if (dto.DnaProcessIds.Count != dto.DnaProcessIds.Distinct().Count())
+                return BadRequest("Duplicate dnaProcessIds are not allowed");
+
+            // Validate all dnaProcessIds exist
+            var existingProcessIds = await _context.DnaProcesses
+                .Where(dp => dto.DnaProcessIds.Contains(dp.Id))
+                .Select(dp => dp.Id)
+                .ToListAsync();
+
+            if (existingProcessIds.Count != dto.DnaProcessIds.Count)
+                return BadRequest("One or more dnaProcessIds are invalid");
+
+            // Use transaction to replace atomically
+            using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Remove existing links
+                if (workflow.WorkflowProcesses != null && workflow.WorkflowProcesses.Any())
+                {
+                    _context.WorkflowProcesses.RemoveRange(workflow.WorkflowProcesses);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Add new ordered links
+                var newLinks = new List<WorkflowProcess>();
+                for (int i = 0; i < dto.DnaProcessIds.Count; i++)
+                {
+                    newLinks.Add(new WorkflowProcess
+                    {
+                        WorkflowId = id,
+                        DnaProcessId = dto.DnaProcessIds[i],
+                        ProcessOrder = i + 1
+                    });
+                }
+
+                if (newLinks.Count > 0)
+                {
+                    _context.WorkflowProcesses.AddRange(newLinks);
+                    await _context.SaveChangesAsync();
+                }
+
+                await tx.CommitAsync();
+                return NoContent();
+            }
+            catch (DbUpdateException ex)
+            {
+                await tx.RollbackAsync();
+                // log ex if you have logging; return generic error
+                return StatusCode(500, "Failed to replace workflow processes");
+            }
+        }
+
         // PUT: api/workflows/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutWorkflow(int id, Workflow workflow)
@@ -133,8 +201,14 @@ namespace DotNetCoreWebApi.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteWorkflow(int id)
         {
-            var workflow = await _context.Workflows.FindAsync(id);
+            var workflow = await _context.Workflows
+                .Include(w => w.WorkflowProcesses)
+                .FirstOrDefaultAsync(w => w.Id == id);
             if (workflow == null) return NotFound();
+
+            if (workflow.WorkflowProcesses?.Any() == true)
+                _context.WorkflowProcesses.RemoveRange(workflow.WorkflowProcesses);
+
             _context.Workflows.Remove(workflow);
             await _context.SaveChangesAsync();
             return NoContent();
@@ -144,6 +218,17 @@ namespace DotNetCoreWebApi.Controllers
         {
             public int DnaProcessId { get; set; }
             public int ProcessOrder { get; set; }
+        }
+
+        public class CreateWorkflowDto
+        {
+            public string Name { get; set; }
+            public int CreatedBy { get; set; }
+        }
+
+        public class ReplaceProcessesDto
+        {
+            public List<int> DnaProcessIds { get; set; } = new List<int>();
         }
 
         private bool WorkflowExists(int id) => _context.Workflows.Any(e => e.Id == id);

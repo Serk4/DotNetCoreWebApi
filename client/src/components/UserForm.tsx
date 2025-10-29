@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import { User } from '../types';
 
@@ -10,12 +10,12 @@ interface Props {
 }
 
 const UserForm: React.FC<Props> = ({ initialUser = null, onCancel, onSubmit, submitting = false }) => {
-  const [userName, setUserName] = useState(initialUser?.userName ?? '');
-  const [email, setEmail] = useState(initialUser?.email ?? '');
-  const [userType, setUserType] = useState<number>(initialUser?.userType ?? 2);
-  const [errors, setErrors] = useState<{ userName?: string; email?: string } | null>(null);
+  const [userName, setUserName] = React.useState(initialUser?.userName ?? '');
+  const [email, setEmail] = React.useState(initialUser?.email ?? '');
+  const [userType, setUserType] = React.useState<number>(initialUser?.userType ?? 2);
+  const [errors, setErrors] = React.useState<{ userName?: string; email?: string } | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     setUserName(initialUser?.userName ?? '');
     setEmail(initialUser?.email ?? '');
     setUserType(initialUser?.userType ?? 2);
