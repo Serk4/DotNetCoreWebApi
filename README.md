@@ -12,7 +12,7 @@ Inspired by real-world lab management needs, this app lets users define reusable
 - **RESTful APIs**: Full CRUD for Users, DnaProcesses, Workflows, and WorkflowGroups. Custom actions like adding processes to workflows with validation (no dups per WF). Endpoints use async EF queries with projections to avoid cycles.
 - **Seeded Data**: Baseline with 4 users (Admin, Technicians, Analyst), 3 processes, 1 default workflow with ordered steps, and a sample run with worksheets/step props.
 - **No Cascade Cycles**: FKs configured with `ON DELETE NO ACTION` to prevent SQL Server errors in complex deletes.
-- **Future Frontend**: Planning a React single-page app for intuitive UI (e.g., drag-drop process sequencing, real-time run tracking). This repo focuses on backend; frontend branch coming soon!
+- **React Integration**: Basis frontend stub in /client for API demos (e.g., users table); full UI planned.
 
 ## Frontend
 The repository includes a React frontend stub in the `/client` folder to showcase API integration. It fetches and displays the seeded users in a simple table, demonstrating live data loading from the backend.
@@ -23,7 +23,7 @@ cd client
 npm install
 
 2. **Start the React App**:
-npm start
+- Run 'npm start'
 - Opens http://localhost:3000—shows the Users table populated from `/api/users`.
 - Ensure the API is running (`dotnet run`) for data.
 
@@ -40,11 +40,19 @@ The core is a hierarchical model:
 - **Worksheets**: Step instances linked to groups (many-to-many via `WorksheetWorkflowGroup` with `StepOrder` for per-run ordering).
 - **Step Tables** (Extraction, Amplification, Quantification): Process-specific props (Prop1/Prop2 placeholders).
 
-ERD (generated from dbdiagram.io):
-[User] --(createdBy)--> [DnaProcess] <--(dnaProcessId)-- [Worksheet] --(worksheetId)--> [Extraction|Amplification|Quantification]
-[User] --(createdBy)--> [Workflow] --(workflowId)--> [WorkflowGroup] --(workflowGroupId)--> [WorksheetWorkflowGroup] <--(worksheetId)-- [Worksheet]
-[Workflow] --(workflowId)--> [WorkflowProcess] --(dnaProcessId)--> [DnaProcess]
+ERD (generated from dbdiagram.io): Full interactive diagram [here](https://dbdiagram.io/d/Scalable-Workflows-Worksheets-68dd4368d2b221e422d0865c).
 
+```mermaid
+graph LR
+  User[Users] --> Workflow[Workflows]
+  Workflow --> WP["WorkflowProcesses"]
+  WP --> DP["DnaProcesses"]
+  Workflow --> WG["WorkflowGroups"]
+  WG --> WWG["WorksheetWorkflowGroups"]
+  WWG --> Ws[Worksheets]
+  WWG --> E[Extractions]
+  WWG --> A[Amplifications]
+```
 See `dbdiagram.io` link in commit history for full DBML.
 
 ## API Endpoints
@@ -78,7 +86,7 @@ Swagger: [localhost:7049/swagger](https://localhost:7049/swagger) (dev mode).
 
 ## How to Run
 1. **Clone & Restore**:
-2. git clone <your-repo-name.git>
+git clone https://github.com/Serk4/DotNetCoreWebApi.git
 cd DotNetCoreWebApi
 dotnet restore
 
@@ -87,7 +95,7 @@ dotnet ef database update
 
 3. **Run Backend**:
 dotnet run
-   - API at `https://localhost:7049`.
+- API at `https://localhost:7049`.
 - Swagger at `https://localhost:7049/swagger`.
 
 4. **Run Frontend**:
@@ -107,50 +115,60 @@ npm start
 ## Contributing
 Fork, branch, PR! Focus on schema tweaks, new endpoints, or React integration.
 
-## License
-MIT—free to use/fork for your lab apps or showcases.
-
 # Schema Design Notes — "Worked" vs Scalable
 
 This document captures lessons learned migrating from a legacy, "it-works" siloed schema to the normalized schema used in this project. It documents the flaws I encountered in production systems and how the app's schema (see `Models.cs`) addresses them.
 
-DBML of legacy schema (worked, but unscalable):  
-https://dbdiagram.io/d/Not-Scalable-Workflows-Worksheets-6903d2e86735e11170910382
+DBML of legacy schema (worked, but unscalable): https://dbdiagram.io/d/Not-Scalable-Workflows-Worksheets-6903d2e86735e11170910382
 
 ## TL;DR
 Short-term hacks made things functionally correct, but amplified maintenance cost, risk, and developer time. The normalized design here favors consistent PK/FK types, typed junctions, and a single `Worksheet` model that can handle any `DnaProcess`.
 
-## Problem summary (legacy)
+## Problem Summary (Legacy)
 - Mixed key types (e.g., `username`/nvarchar used as FK) cause join mismatches and slow plans.
 - Per-process silo tables duplicated schema & business logic (~12 copies).
 - Loose links via codes/strings (`processCode`) require fragile string-check logic and brittle migrations.
 - Adding a new DNA step meant copy/paste work and multi-week hotfixes.
 
-## What this app fixes
+## What This App Fixes
 - Consistent integer PKs/FKs (`int`) across `Users`, `Workflows`, `DnaProcesses`, `Worksheets`.
 - Typed junction tables: `WorkflowProcess`, `WorksheetWorkflowGroup` — explicit FKs prevent silent mismatch.
 - Single `Worksheet` table + typed FKs to `DnaProcess` eliminates per-process duplication.
 - Seeded data and queries are performant and predictable.
 
-## Comparison (legacy vs this app)
-
-| Problem area | Legacy ("Worked") | This app (Normalized) |
-|---|---:|---|
-| Key types | Mixed (nvarchar PKs referencing usernames) | Int PKs everywhere (`Id`) — predictable joins |
-| Process modeling | Siloed per-process tables and string links | `DnaProcess` as hub; `WorkflowProcess` typed FK |
-| Adding a process | Create tables + duplicate code | Add a `DnaProcess` + seed; reuse junctions |
-| Referential integrity | Enforced by application string checks; brittle | Enforced by DB FKs; easier to reason about |
+## Comparison (Legacy vs This App)
+| Problem Area | Legacy ("Worked") | This App (Normalized) |
+|--------------|-------------------|-----------------------|
+| Key Types | Mixed (nvarchar PKs referencing usernames) | Int PKs everywhere (`Id`) — predictable joins |
+| Process Modeling | Siloed per-process tables and string links | `DnaProcess` as hub; `WorkflowProcess` typed FK |
+| Adding a Process | Create tables + duplicate code | Add a `DnaProcess` + seed; reuse junctions |
+| Referential Integrity | Enforced by application string checks; brittle | Enforced by DB FKs; easier to reason about |
 | Performance | Slow joins across heterogenous types | Fast integer joins; simpler indices |
 
-## Migration rationale
+## Migration Rationale
 - Use explicit FK configuration in `OnModelCreating` to avoid cascade cycles where necessary.
 - Prefer `DeleteBehavior.NoAction` when cascading would create multiple paths; otherwise use `Cascade` where semantics require children removed with parent.
 - When deleting `Workflow`, ensure dependent `WorkflowProcess` rows are removed or configure cascade explicitly.
 
-## Quick deletion pattern
+## Quick Deletion Pattern
 If you need to delete a `Workflow` safely in code (avoid FK constraint failures):
 
-````````
+```csharp
+// Example: Soft-delete or manual cleanup before hard delete
+var workflow = await _context.Workflows.FindAsync(id);
+if (workflow != null)
+{
+    // Cleanup dependents first (e.g., unlink groups)
+    var groups = await _context.WorkflowGroups.Where(g => g.WorkflowId == id).ToListAsync();
+    foreach (var group in groups)
+    {
+        _context.WorkflowGroups.Remove(group);  // Or set FK null
+    }
+    await _context.SaveChangesAsync();
+    _context.Workflows.Remove(workflow);
+    await _context.SaveChangesAsync();
+}
+```
 
 ## Next steps / gotchas
 - Review `OnModelCreating` FKs and `DeleteBehavior` choices before enabling cascade deletes; multiple cascade paths can be refused by SQL Server.
@@ -159,22 +177,29 @@ If you need to delete a `Workflow` safely in code (avoid FK constraint failures)
 
 Fork, iterate, and avoid creating new silos. Normalize once; then scale.
 
-````````
-
-graph LR
-  subgraph "Bad Schema (DBML: 'Worked' But Hell)"
+```mermaid
+%%{init: {'flowchart': {'subGraphPadding': 80}}}%%
+graph TD
+  subgraph "Bad Schema (Siloed)"
     UserB["User - nvarchar PK<br/>username"] --> WorkflowB["workflow - int PK<br/>createdBy nvarchar (String Mismatch!)"]
     WorkflowB --> WPB["workflowProcess<br/>processCode nvarchar (Half-Ref to DnaProcess)"]
     WPB --> DPB["DnaProcess - nvarchar PK<br/>Underused"]
     WorkflowB --> WWLB["WorksheetWorkflowLink<br/>Generic worksheetId int<br/>processCode nvarchar Ref"]
-    WWLB -.->| "String Checks" | ExtractionB["extraction Silo + Dupes<br/>ex_Prop1"]
-    WWLB -.->| "String Checks" | AmplificationB["amplification Silo + Dupes<br/>am_Prop1"]
+    WWLB -.->|"String Checks"| ExtractionB["extraction Silo + Dupes<br/>ex_Prop1"]
+    WWLB -.->|"String Checks"| AmplificationB["amplification Silo + Dupes<br/>am_Prop1"]
   end
-
-  subgraph "Good Schema (Scalable Sanity)"
+```
+```mermaid
+graph TD
+  subgraph "Good Schema (Normalized)"
     UserG["Users - int PK"] --> WorkflowG["Workflows<br/>CreatedBy int FK"]
     WorkflowG --> WPG["WorkflowProcesses<br/>DnaProcessId int FK"]
     WPG --> DPG["DnaProcesses - int PK Ref"]
     WorkflowG --> WsG["Worksheets"]
     WsG --> WWGG["WorksheetWorkflowGroups<br/>Typed FKs"]
   end
+```
+
+
+## License
+MIT—free to use/fork for your lab apps or showcases.
