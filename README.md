@@ -1,4 +1,5 @@
 # DNA Workflow API Showcase
+![Schema Score](https://img.shields.io/badge/Normalization-3NF%2B-green)
 
 ![DNA](dna-6883239_small.jpg)
 
