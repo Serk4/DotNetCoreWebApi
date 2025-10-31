@@ -109,3 +109,72 @@ Fork, branch, PR! Focus on schema tweaks, new endpoints, or React integration.
 
 ## License
 MIT—free to use/fork for your lab apps or showcases.
+
+# Schema Design Notes — "Worked" vs Scalable
+
+This document captures lessons learned migrating from a legacy, "it-works" siloed schema to the normalized schema used in this project. It documents the flaws I encountered in production systems and how the app's schema (see `Models.cs`) addresses them.
+
+DBML of legacy schema (worked, but unscalable):  
+https://dbdiagram.io/d/Not-Scalable-Workflows-Worksheets-6903d2e86735e11170910382
+
+## TL;DR
+Short-term hacks made things functionally correct, but amplified maintenance cost, risk, and developer time. The normalized design here favors consistent PK/FK types, typed junctions, and a single `Worksheet` model that can handle any `DnaProcess`.
+
+## Problem summary (legacy)
+- Mixed key types (e.g., `username`/nvarchar used as FK) cause join mismatches and slow plans.
+- Per-process silo tables duplicated schema & business logic (~12 copies).
+- Loose links via codes/strings (`processCode`) require fragile string-check logic and brittle migrations.
+- Adding a new DNA step meant copy/paste work and multi-week hotfixes.
+
+## What this app fixes
+- Consistent integer PKs/FKs (`int`) across `Users`, `Workflows`, `DnaProcesses`, `Worksheets`.
+- Typed junction tables: `WorkflowProcess`, `WorksheetWorkflowGroup` — explicit FKs prevent silent mismatch.
+- Single `Worksheet` table + typed FKs to `DnaProcess` eliminates per-process duplication.
+- Seeded data and queries are performant and predictable.
+
+## Comparison (legacy vs this app)
+
+| Problem area | Legacy ("Worked") | This app (Normalized) |
+|---|---:|---|
+| Key types | Mixed (nvarchar PKs referencing usernames) | Int PKs everywhere (`Id`) — predictable joins |
+| Process modeling | Siloed per-process tables and string links | `DnaProcess` as hub; `WorkflowProcess` typed FK |
+| Adding a process | Create tables + duplicate code | Add a `DnaProcess` + seed; reuse junctions |
+| Referential integrity | Enforced by application string checks; brittle | Enforced by DB FKs; easier to reason about |
+| Performance | Slow joins across heterogenous types | Fast integer joins; simpler indices |
+
+## Migration rationale
+- Use explicit FK configuration in `OnModelCreating` to avoid cascade cycles where necessary.
+- Prefer `DeleteBehavior.NoAction` when cascading would create multiple paths; otherwise use `Cascade` where semantics require children removed with parent.
+- When deleting `Workflow`, ensure dependent `WorkflowProcess` rows are removed or configure cascade explicitly.
+
+## Quick deletion pattern
+If you need to delete a `Workflow` safely in code (avoid FK constraint failures):
+
+````````
+
+## Next steps / gotchas
+- Review `OnModelCreating` FKs and `DeleteBehavior` choices before enabling cascade deletes; multiple cascade paths can be refused by SQL Server.
+- Add tests for common schema migrations (adding/removing DnaProcess) to validate no-cascade surprises.
+- Consider soft-delete if you need audit/history without complex cascade rules.
+
+Fork, iterate, and avoid creating new silos. Normalize once; then scale.
+
+````````
+
+graph LR
+  subgraph "Bad Schema (DBML: 'Worked' But Hell)"
+    UserB["User - nvarchar PK<br/>username"] --> WorkflowB["workflow - int PK<br/>createdBy nvarchar (String Mismatch!)"]
+    WorkflowB --> WPB["workflowProcess<br/>processCode nvarchar (Half-Ref to DnaProcess)"]
+    WPB --> DPB["DnaProcess - nvarchar PK<br/>Underused"]
+    WorkflowB --> WWLB["WorksheetWorkflowLink<br/>Generic worksheetId int<br/>processCode nvarchar Ref"]
+    WWLB -.->| "String Checks" | ExtractionB["extraction Silo + Dupes<br/>ex_Prop1"]
+    WWLB -.->| "String Checks" | AmplificationB["amplification Silo + Dupes<br/>am_Prop1"]
+  end
+
+  subgraph "Good Schema (Scalable Sanity)"
+    UserG["Users - int PK"] --> WorkflowG["Workflows<br/>CreatedBy int FK"]
+    WorkflowG --> WPG["WorkflowProcesses<br/>DnaProcessId int FK"]
+    WPG --> DPG["DnaProcesses - int PK Ref"]
+    WorkflowG --> WsG["Worksheets"]
+    WsG --> WWGG["WorksheetWorkflowGroups<br/>Typed FKs"]
+  end
