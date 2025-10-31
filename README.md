@@ -89,22 +89,32 @@ Swagger: [localhost:7049/swagger](https://localhost:7049/swagger) (dev mode).
 
 ## How to Run
 1. **Clone & Restore**:
-git clone https://github.com/Serk4/DotNetCoreWebApi.git
-cd DotNetCoreWebApi
-dotnet restore
+   
+```git clone https://github.com/Serk4/DotNetCoreWebApi.git```
+
+```cd DotNetCoreWebApi```
+
+```dotnet restore```
 
 2. **Update DB** (runs migrations + seed):
-dotnet ef database update
+
+```dotnet ef database update```
 
 3. **Run Backend**:
-dotnet run
+   
+```dotnet run```
+
 - API at `https://localhost:7049`.
 - Swagger at `https://localhost:7049/swagger`.
 
 4. **Run Frontend**:
-cd client
-npm install
-npm start
+   
+```cd client```
+
+```npm install```
+
+```npm start```
+
 - App at `http://localhost:3000`
 
 5. **Test**: Use Swagger for API, React for UI. CORS enabled for local dev.
