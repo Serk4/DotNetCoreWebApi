@@ -1,5 +1,6 @@
 # DNA Workflow API Showcase
 ![Schema Score](https://img.shields.io/badge/Normalization-3NF%2B-green)
+![dbdocs](https://img.shields.io/badge/dbdocs.io-Schema-blue?logo=data:image/svg+xml;base64,...)
 
 ![DNA](dna-6883239_small.jpg)
 
@@ -43,7 +44,8 @@ The core is a hierarchical model:
 - **Worksheets**: Step instances linked to groups (many-to-many via `WorksheetWorkflowGroup` with `StepOrder` for per-run ordering).
 - **Step Tables** (Extraction, Amplification, Quantification): Process-specific props (Prop1/Prop2 placeholders).
 
-ERD (generated from dbdiagram.io): Full interactive diagram [here](https://dbdiagram.io/d/Scalable-Workflows-Worksheets-68dd4368d2b221e422d0865c).
+ERD (interactive on dbdocs.io): [Explore full schema](https://dbdocs.io/david.serkland/Scalable-DNA-Workflow).
+![Schema ERD](Scalable-DNA-Workflow.png)
 
 ```mermaid
 graph LR
@@ -132,7 +134,8 @@ Fork, branch, PR! Focus on schema tweaks, new endpoints, or React integration.
 
 This document captures lessons learned migrating from a legacy, "it-works" siloed schema to the normalized schema used in this project. It documents the flaws I encountered in production systems and how the app's schema (see `Models.cs`) addresses them.
 
-DBML of legacy schema (worked, but unscalable): https://dbdiagram.io/d/Not-Scalable-Workflows-Worksheets-6903d2e86735e11170910382
+DBML of legacy schema (worked, but unscalable) - ERD (interactive on dbdocs.io): [Explore full schema](https://dbdocs.io/david.serkland/Non-Scalable-DNA-Workflow)
+![Schema ERD](Non-Scalable-DNA-Workflow.png)
 
 ## TL;DR
 Short-term hacks made things functionally correct, but amplified maintenance cost, risk, and developer time. The normalized design here favors consistent PK/FK types, typed junctions, and a single `Worksheet` model that can handle any `DnaProcess`.
