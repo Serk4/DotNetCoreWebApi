@@ -1,10 +1,13 @@
 # DNA Workflow API Showcase
 ![Schema Score](https://img.shields.io/badge/Normalization-3NF%2B-green)
 ![dbdocs](https://img.shields.io/badge/dbdocs.io-Schema-blue?logo=data:image/svg+xml;base64,...)
-
+[![.NET](https://img.shields.io/badge/.NET-9-blue?logo=dotnet)](https://dotnet.microsoft.com/)
+[![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://reactjs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<br>
 ![DNA](dna-6883239_small.jpg)
 
-This repository showcases a scalable .NET 9 Web API for managing DNA lab workflows, drawing from real-world lab operations. At its core is a hierarchical model: Managers define reusable workflow templates with ordered DNA processes (e.g., extraction → amplification → quantification) for teams. Workers select a template to create runs (WorkflowGroups), instantiating worksheets (step instances) with process-specific props like yield or cycles. This supports multi-user collaboration—e.g., intersecting workflows from different workers can merge into a shared group via `StepOrder` for flexible sequencing, minimizing redundant steps and cutting costs. Normalized junctions (e.g., WorkflowProcesses) ensure scalability without duplication.
+This repository showcases a scalable .NET 9 Web API for managing DNA lab workflows, inspired by real-world lab operations. At its core is a hierarchical model: Managers define reusable workflow templates with ordered DNA processes (e.g., extraction → amplification → quantification) for teams. Workers select a template to create runs (WorkflowGroups), instantiating worksheets (step instances) with process-specific props like yield or cycles. This supports multi-user collaboration—e.g., intersecting workflows from different workers can merge into a shared group via `StepOrder` for flexible sequencing, minimizing redundant steps and cutting costs. Normalized junctions (e.g., WorkflowProcesses) ensure scalability without duplication.
 
 The goal is to highlight:
 - **Data modeling for complex lab processes**: Ordered sequences and process-specific props in a 3NF+ schema.
@@ -16,7 +19,7 @@ The goal is to highlight:
 - **RESTful APIs**: Full CRUD for Users, DnaProcesses, Workflows, and WorkflowGroups. Custom actions like adding processes to workflows with validation (no dups per WF). Endpoints use async EF queries with projections to avoid cycles.
 - **Seeded Data**: Baseline with 4 users (Admin, Technicians, Analyst), 3 processes, 1 default workflow with ordered steps, and a sample run with worksheets/step props.
 - **No Cascade Cycles**: FKs configured with `ON DELETE NO ACTION` to prevent SQL Server errors in complex deletes.
-- **React Integration**: Basis frontend stub in /client for API demos (e.g., users table); full UI planned.
+- **React Integration**: Basic frontend stub in /client for API demos (e.g., users table); full UI planned.
 
 ## Frontend
 The repository includes a basic React frontend stub in the `/client` folder to showcase API integration. It fetches and displays the seeded users in a simple table, demonstrating live data loading from the backend.
@@ -76,7 +79,8 @@ All at `/api/{controller}` (e.g., `/api/workflows`). Test in Swagger at `/swagge
 | | GET | /workflows/{id} | Get workflow with ordered processes. |
 | | POST | /workflows | Create workflow (e.g., {"name": "Test WF", "createdBy": 1}). |
 | | POST | /workflows/{id}/add-process | Add single process (e.g., {"dnaProcessId": 1, "processOrder": 1}). |
-| | PUT/DELETE | /workflows/{id} | Update/delete. |
+| | PUT | /workflows/{id} | Update workflow. |
+| | DELETE | /workflows/{id} | Delete workflow. |
 | **WorkflowGroups** | GET | /workflowgroups/{id}/report | Ordered report of run (worksheets + processes). |
 
 *Note*: DnaProcesses are ref data—seed via SQL inserts for dev (e.g., `INSERT INTO DnaProcesses (Name, Description) VALUES ('Purification', 'Cleanup step');`). New processes require adding a specific table (e.g., Purifications) and specimen pattern (e.g., PurificationSpecimen) to match schema.
