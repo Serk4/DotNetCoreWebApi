@@ -3,9 +3,12 @@
 
 ![DNA](dna-6883239_small.jpg)
 
-This repository demonstrates a scalable database schema and RESTful API for managing DNA lab workflows, built with .NET 9, Entity Framework Core, and SQL Server. The goal is to showcase **data modeling for complex lab processes** (e.g., ordered sequences of extraction, amplification, quantification), **RESTful endpoints** for CRUD and custom operations, and future integration with a modern frontend like **React** (my first dive into it!).
+This repository showcases a scalable .NET 9 Web API for managing DNA lab workflows, drawing from real-world lab operations. At its core is a hierarchical model: Managers define reusable workflow templates with ordered DNA processes (e.g., extraction → amplification → quantification) for teams. Workers select a template to create runs (WorkflowGroups), instantiating worksheets (step instances) with process-specific props like yield or cycles. This supports multi-user collaboration—e.g., intersecting workflows from different workers can merge into a shared group via `StepOrder` for flexible sequencing, minimizing redundant steps and cutting costs. Normalized junctions (e.g., WorkflowProcesses) ensure scalability without duplication.
 
-Inspired by real-world lab management needs, this app lets users define reusable workflows, instantiate runs (groups), and track worksheets with process-specific props—all while handling sharing across users without duplication.
+The goal is to highlight:
+- **Data modeling for complex lab processes**: Ordered sequences and process-specific props in a 3NF+ schema.
+- **RESTful endpoints**: Full CRUD plus custom ops (e.g., add-process to workflows).
+- **Frontend integration**: React stub in `/client` for demos (my first React project—expanding soon!).
 
 ## Features
 - **Scalable Schema**: Normalized design (3NF+) with junction tables for many-to-many relationships (e.g., workflows to processes, worksheets to groups). Supports n-user sharing of worksheets at varying orders via `StepOrder` per group.
