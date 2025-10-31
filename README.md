@@ -11,14 +11,14 @@ The goal is to highlight:
 - **Frontend integration**: React stub in `/client` for demos (my first React project—expanding soon!).
 
 ## Features
-- **Scalable Schema**: Normalized design (3NF+) with junction tables for many-to-many relationships (e.g., workflows to processes, worksheets to groups). Supports n-user sharing of worksheets at varying orders via `StepOrder` per group.
+- **Scalable Schema**: Normalized design (3NF+) with junction tables for many-to-many relationships (e.g., workflows to processes, worksheets to groups). Supports multi-user sharing of worksheets at varying orders via `StepOrder` per group.
 - **RESTful APIs**: Full CRUD for Users, DnaProcesses, Workflows, and WorkflowGroups. Custom actions like adding processes to workflows with validation (no dups per WF). Endpoints use async EF queries with projections to avoid cycles.
 - **Seeded Data**: Baseline with 4 users (Admin, Technicians, Analyst), 3 processes, 1 default workflow with ordered steps, and a sample run with worksheets/step props.
 - **No Cascade Cycles**: FKs configured with `ON DELETE NO ACTION` to prevent SQL Server errors in complex deletes.
 - **React Integration**: Basis frontend stub in /client for API demos (e.g., users table); full UI planned.
 
 ## Frontend
-The repository includes a React frontend stub in the `/client` folder to showcase API integration. It fetches and displays the seeded users in a simple table, demonstrating live data loading from the backend.
+The repository includes a basic React frontend stub in the `/client` folder to showcase API integration. It fetches and displays the seeded users in a simple table, demonstrating live data loading from the backend.
 
 ### How to Run the Frontend
 1. **Install Dependencies** (in repo root):
@@ -70,14 +70,14 @@ All at `/api/{controller}` (e.g., `/api/workflows`). Test in Swagger at `/swagge
 | | DELETE | /users/{id} | Delete user. |
 | **DnaProcesses** | GET | /dnaprocesses | List processes with creators. |
 | | GET | /dnaprocesses/{id} | Get process by Id. |
-| | POST | /dnaprocesses | Create process (e.g., {"name": "Sequencing", "createdBy": 1}). |
-| | PUT/DELETE | /dnaprocesses/{id} | Update/delete. |
 | **Workflows** | GET | /workflows | List workflows with ordered processes. |
 | | GET | /workflows/{id} | Get workflow with ordered processes. |
 | | POST | /workflows | Create workflow (e.g., {"name": "Test WF", "createdBy": 1}). |
 | | POST | /workflows/{id}/add-process | Add single process (e.g., {"dnaProcessId": 1, "processOrder": 1}). |
 | | PUT/DELETE | /workflows/{id} | Update/delete. |
 | **WorkflowGroups** | GET | /workflowgroups/{id}/report | Ordered report of run (worksheets + processes). |
+
+*Note*: DnaProcesses are ref data—seed via SQL inserts for dev (e.g., `INSERT INTO DnaProcesses (Name, Description) VALUES ('Purification', 'Cleanup step');`). New processes require adding a specific table (e.g., Purifications) and specimen pattern (e.g., PurificationSpecimen) to match schema.
 
 Swagger: [localhost:7049/swagger](https://localhost:7049/swagger) (dev mode).
 
@@ -146,12 +146,12 @@ Short-term hacks made things functionally correct, but amplified maintenance cos
 ## What This App Fixes
 - Consistent integer PKs/FKs (`int`) across `Users`, `Workflows`, `DnaProcesses`, `Worksheets`.
 - Typed junction tables: `WorkflowProcess`, `WorksheetWorkflowGroup` — explicit FKs prevent silent mismatch.
-- Single `Worksheet` table + typed FKs to `DnaProcess` eliminates per-process duplication.
+- Single `Worksheet` table + typed FKs to `DnaProcess` eliminates per-process duplication—scaling a new DNA process is a breeze: SQL insert to ref + 1-2 new tables (specific props + specimen pattern), vs. legacy's copy-paste of a dozen tables followed by tedious renaming/hotfixes.
 - Seeded data and queries are performant and predictable.
 
 ## Comparison (Legacy vs This App)
 | Problem Area | Legacy ("Worked") | This App (Normalized) |
-|--------------|-------------------|-----------------------|
+|:--------------|:-------------------|:-----------------------|
 | Key Types | Mixed (nvarchar PKs referencing usernames) | Int PKs everywhere (`Id`) — predictable joins |
 | Process Modeling | Siloed per-process tables and string links | `DnaProcess` as hub; `WorkflowProcess` typed FK |
 | Adding a Process | Create tables + duplicate code | Add a `DnaProcess` + seed; reuse junctions |
@@ -183,7 +183,7 @@ if (workflow != null)
 }
 ```
 
-## Next steps / gotchas
+## Next Steps / Gotchas
 - Review `OnModelCreating` FKs and `DeleteBehavior` choices before enabling cascade deletes; multiple cascade paths can be refused by SQL Server.
 - Add tests for common schema migrations (adding/removing DnaProcess) to validate no-cascade surprises.
 - Consider soft-delete if you need audit/history without complex cascade rules.
