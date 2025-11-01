@@ -26,14 +26,30 @@ builder.Services.AddCors(options => {
         .AllowAnyHeader());
 });
 
+// Prefer serving a built client if present
+var clientBuildPath = Path.Combine(builder.Environment.ContentRootPath, "client", "build");
+var defaultWwwroot = Path.Combine(builder.Environment.ContentRootPath, "wwwroot");
+var webRootExists = false;
+
+// If client build exists, use it as the web root so static files are served from client/build
+if (Directory.Exists(clientBuildPath))
+{
+    builder.WebHost.UseWebRoot(Path.Combine("client", "build"));
+    webRootExists = true;
+}
+// Otherwise if wwwroot exists, keep default web root behavior
+else if (Directory.Exists(defaultWwwroot))
+{
+    webRootExists = true;
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-// Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();  // Serves the JSON spec
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DNA Workflow API v1"));  // UI
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DNA Workflow API v1"));  // UI    
 }
 
 app.UseHttpsRedirection();
@@ -41,10 +57,12 @@ app.UseCors();  // Enable CORS
 app.UseAuthorization();
 app.MapControllers();  // Maps routes like /api/workflowgroups
 
-// Serve single-page React app if built files are present in wwwroot
-// (Copy the React build output into DotNetCoreWebApi/wwwroot)
-app.UseDefaultFiles();
-app.UseStaticFiles();
-app.MapFallbackToFile("index.html");
+// Only wire up static-file middleware if a web root exists (prevents warning)
+if (webRootExists)
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+    app.MapFallbackToFile("index.html");
+}
 
 app.Run();

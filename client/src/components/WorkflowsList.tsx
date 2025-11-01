@@ -3,15 +3,16 @@ import WorkflowsApi from '../api/workflows';
 import UsersApi from '../api/users';
 import { Workflow } from '../types';
 import WorkflowForm from './WorkflowForm';
+import { toastSuccess, toastError } from '../toast';
 
 interface Props {
   apiUrl?: string; // not used when wrapper is used
 }
 
-const WorkflowsList: React.FC<Props> = ({ apiUrl }) => {
+const WorkflowsList: React.FC<Props> = () => {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Workflow | null>(null);
@@ -25,7 +26,9 @@ const WorkflowsList: React.FC<Props> = ({ apiUrl }) => {
       setWorkflows(list);
     } catch (ex: unknown) {
       console.error('API error (workflows):', ex);
-      setError(ex instanceof Error ? ex.message : 'Failed to load workflows');
+      toastError(ex instanceof Error ? ex.message : 'Failed to load workflows');
+      setWorkflows([]); // ensure empty state
+      setError(null); // don't show inline error; rely on toast
     } finally {
       setLoading(false);
     }
@@ -77,12 +80,16 @@ const WorkflowsList: React.FC<Props> = ({ apiUrl }) => {
         if (payload.dnaProcessIds && payload.dnaProcessIds.length) {
           await WorkflowsApi.replaceProcesses(payload.id, payload.dnaProcessIds);
         }
+
+        toastSuccess(`Workflow "${payload.name}" updated`);
       } else {
         // create workflow then set processes in one call
         const created = await WorkflowsApi.create({ name: payload.name, createdBy: payload.createdBy });
         if (payload.dnaProcessIds && payload.dnaProcessIds.length) {
           await WorkflowsApi.replaceProcesses(created.id, payload.dnaProcessIds);
         }
+
+        toastSuccess(`Workflow "${payload.name}" created`);
       }
 
       await load(); // refresh to get server-side projection (CreatedByUser, WorkflowProcesses)
@@ -90,7 +97,7 @@ const WorkflowsList: React.FC<Props> = ({ apiUrl }) => {
       setEditing(null);
     } catch (ex: unknown) {
       console.error('API error (save workflow):', ex);
-      setError(ex instanceof Error ? ex.message : 'Failed to save workflow');
+      toastError('Failed to save workflow');
     } finally {
       setSubmitting(false);
     }
@@ -101,15 +108,16 @@ const WorkflowsList: React.FC<Props> = ({ apiUrl }) => {
     setError(null);
     try {
       await WorkflowsApi.remove(w.id);
+      toastSuccess(`Workflow "${w.name}" deleted`);
       await load();
     } catch (ex: unknown) {
       console.error('API error (delete workflow):', ex);
-      setError(ex instanceof Error ? ex.message : 'Failed to delete workflow');
+      toastError('Failed to delete workflow');
     }
   };
 
   if (loading) return <div className="p-3">Loading workflows...</div>;
-  if (error) return <div className="p-3 text-danger">{error}</div>;
+  // Note: inline error display removed in favor of toastError notifications
 
   return (
     <div className="p-4">

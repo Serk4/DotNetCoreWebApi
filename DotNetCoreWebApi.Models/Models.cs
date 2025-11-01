@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DotNetCoreWebApi.Models
@@ -80,7 +81,18 @@ namespace DotNetCoreWebApi.Models
         [ForeignKey(nameof(WorkflowId))]
         public Workflow Workflow { get; set; } = null!;
 
+        // Identify this execution/run instance of the workflow
+        [MaxLength(255)]
+        public string RunName { get; set; } = string.Empty;
+
         public ICollection<WorksheetWorkflowGroup> WorksheetWorkflowGroups { get; set; } = new List<WorksheetWorkflowGroup>();
+    }
+
+    public enum WorksheetStatus
+    {
+        Pending = 0,
+        InProgress = 1,
+        Completed = 2
     }
 
     public class Worksheet
@@ -97,6 +109,12 @@ namespace DotNetCoreWebApi.Models
         public int DnaProcessId { get; set; }
         [ForeignKey(nameof(DnaProcessId))]
         public DnaProcess DnaProcess { get; set; } = null!;
+
+        // New: when the analyst starts work (nullable)
+        public DateTime? StartAt { get; set; }
+
+        // New: track lifecycle (default: Pending)
+        public WorksheetStatus Status { get; set; } = WorksheetStatus.Pending;
 
         public ICollection<WorksheetWorkflowGroup> WorksheetWorkflowGroups { get; set; } = new List<WorksheetWorkflowGroup>();
         public ICollection<Extraction> Extractions { get; set; } = new List<Extraction>();

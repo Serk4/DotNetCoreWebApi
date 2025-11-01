@@ -14,6 +14,7 @@ export interface DnaProcess {
 export interface WorkflowProcess {
     id: number;
     processOrder: number;
+    dnaProcessId?: number;
     dnaProcess?: DnaProcess | null;
 }
 

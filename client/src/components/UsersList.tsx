@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import UsersApi from '../api/users';
 import { User } from '../types';
 import UserForm from './UserForm';
+import { toastSuccess, toastError } from '../toast';
 
 interface Props {
   apiUrl?: string; // kept for compatibility, not used when wrapper is used
@@ -17,15 +18,21 @@ const UsersList: React.FC<Props> = ({ apiUrl }) => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const sortByUserName = (arr: User[]) =>
+    arr.slice().sort((a, b) => a.userName.localeCompare(b.userName, undefined, { sensitivity: 'base' }));
+
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await UsersApi.list();
-      setUsers(res);
+      setUsers(res ? sortByUserName(res) : []);
     } catch (ex: unknown) {
       console.error('API error (users):', ex);
-      setError(ex instanceof Error ? ex.message : 'Failed to load users');
+      const msg = ex instanceof Error ? ex.message : 'Failed to load users';
+      toastError(msg);
+      setUsers([]);
+      setError(null);
     } finally {
       setLoading(false);
     }
@@ -58,17 +65,23 @@ const UsersList: React.FC<Props> = ({ apiUrl }) => {
       if (payload.id) {
         // Update
         await UsersApi.update({ ...(payload as any) as { id: number } });
-        setUsers(prev => prev.map(p => (p.id === payload.id ? { ...(p as User), ...payload } as User : p)));
+        setUsers(prev =>
+          sortByUserName(prev.map(p => (p.id === payload.id ? ({ ...(p as User), ...payload } as User) : p)))
+        );
+        toastSuccess('User updated');
       } else {
         // Create
         const res = await UsersApi.create(payload as Omit<User, 'id'>);
-        setUsers(prev => [res, ...prev]);
+        setUsers(prev => sortByUserName([...(prev || []), res]));
+        toastSuccess('User created');
       }
       setShowForm(false);
       setEditingUser(null);
     } catch (ex: unknown) {
       console.error('API error (save user):', ex);
-      setError(ex instanceof Error ? ex.message : 'Failed to save user');
+      const msg = ex instanceof Error ? ex.message : 'Failed to save user';
+      toastError(msg);
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -79,10 +92,13 @@ const UsersList: React.FC<Props> = ({ apiUrl }) => {
     setError(null);
     try {
       await UsersApi.remove(u.id);
-      setUsers(prev => prev.filter(x => x.id !== u.id));
+      setUsers(prev => sortByUserName(prev.filter(x => x.id !== u.id)));
+      toastSuccess('User deleted');
     } catch (ex: unknown) {
       console.error('API error (delete user):', ex);
-      setError(ex instanceof Error ? ex.message : 'Failed to delete user');
+      const msg = ex instanceof Error ? ex.message : 'Failed to delete user';
+      toastError(msg);
+      setError(msg);
     }
   };
 
@@ -112,7 +128,7 @@ const UsersList: React.FC<Props> = ({ apiUrl }) => {
           <thead className="table-light">
             <tr>
               <th>ID</th>
-              <th>Username</th>
+              <th>User Name</th>
               <th>Email</th>
               <th>Type</th>
               <th style={{ width: 160 }}>Actions</th>
