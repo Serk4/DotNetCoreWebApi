@@ -5,7 +5,6 @@ import SchemaShowdown from './SchemaShowdown';
 
 export default function SchemaShowcase() {
     const [diagrams, setDiagrams] = useState({ legacy: '', normalized: '' });
-    const [metrics, setMetrics] = useState(null);
     const [step, setStep] = useState(0);
     const [autoplay, setAutoplay] = useState(false);
     const [intervalMs, setIntervalMs] = useState(1500);
@@ -56,7 +55,43 @@ export default function SchemaShowcase() {
         return () => clearInterval(id);
     }, [autoplay, intervalMs, loop, MAX_STEP]);
 
-    const nextStep = () => setStep((prev) => Math.min(prev + 1, MAX_STEP));
+    const [flashRefNote, setFlashRefNote] = useState(false);
+    const flashTimer = useRef(null);
+    const [newAdded, setNewAdded] = useState(null);
+    const newAddedTimer = useRef(null);
+
+    // NEW: keep the center note static after the first Add action
+    const [notePersistent, setNotePersistent] = useState(false);
+
+    const nextStep = () =>
+        setStep((prev) => {
+            const next = Math.min(prev + 1, MAX_STEP);
+            // only trigger when a new process is actually added
+            if (next !== prev) {
+                setFlashRefNote(true);
+                if (flashTimer.current) clearTimeout(flashTimer.current);
+                flashTimer.current = setTimeout(() => setFlashRefNote(false), 900);
+
+                // new: mark the process just added
+                const addedProcess = PROCESSES[next];
+                setNewAdded(addedProcess);
+                if (newAddedTimer.current) clearTimeout(newAddedTimer.current);
+                newAddedTimer.current = setTimeout(() => setNewAdded(null), 1200);
+
+                // make the center note persistent from now on
+                setNotePersistent(true);
+            }
+            return next;
+        });
+
+    // ensure timers are cleared on unmount
+    useEffect(() => {
+        return () => {
+            if (flashTimer.current) clearTimeout(flashTimer.current);
+            if (newAddedTimer.current) clearTimeout(newAddedTimer.current);
+        };
+    }, []);
+
     const prevStep = () => setStep((prev) => Math.max(prev - 1, 0));
     const reset = () => {
         setStep(0);
@@ -64,6 +99,18 @@ export default function SchemaShowcase() {
         setHoveredBad(null);
         setSelectedGood(null);
         setHoveredGood(null);
+        setFlashRefNote(false);
+        setNewAdded(null);
+        // reset the persistent note
+        setNotePersistent(false);
+        if (flashTimer.current) {
+            clearTimeout(flashTimer.current);
+            flashTimer.current = null;
+        }
+        if (newAddedTimer.current) {
+            clearTimeout(newAddedTimer.current);
+            newAddedTimer.current = null;
+        }
     };
 
     // Icon primitives
@@ -125,7 +172,7 @@ export default function SchemaShowcase() {
             <div style={{ gridColumn: '1 / span 2' }}>
                 <div className="controls" style={{ marginBottom: 8 }}>
                     <button onClick={prevStep}>◀</button>
-                    <button onClick={nextStep} style={{ marginLeft: 6 }}>▶ Add Process</button>
+                    <button onClick={nextStep} style={{ marginLeft: 6 }}>▶ Add New Process</button>
                     <button onClick={reset} style={{ marginLeft: 8 }}>Reset</button>
 
                     <button onClick={() => setAutoplay(a => !a)} style={{ marginLeft: 12 }}>{autoplay ? 'Pause Auto' : 'Auto Play'}</button>
@@ -185,13 +232,27 @@ export default function SchemaShowcase() {
                                             <div style={{ marginTop: 10, width: '100%' }}>
                                                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                                                     {visibleRefProcesses.map((p) => (
-                                                        <li key={p} style={{ padding: '2px 0', fontWeight: 400 }}>
-                                                            {p}
-                                                        </li>
+                                                        <div
+                                                            key={p}
+                                                            className="ref-row"
+                                                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}
+                                                            aria-hidden
+                                                        >
+                                                            <div style={{ fontWeight: 400 }} className={newAdded === p ? 'new-row-highlight' : ''}>
+                                                                {p}
+                                                            </div>
+                                                            {newAdded === p && <span className="added-badge" aria-hidden>Added</span>}
+                                                        </div>
                                                     ))}
                                                 </ul>
                                             </div>
-                                            <div style={{ marginTop: 6, fontSize: 12 }} className="silo-note">Add a row for new process</div>
+                                            <div
+                                                style={{ marginTop: 6, fontSize: 12 }}
+                                                className={`silo-note ${flashRefNote ? 'emphasize' : ''} ${notePersistent ? 'persistent' : ''}`}
+                                                aria-live="polite"
+                                            >
+                                                {flashRefNote ? 'Row Inserted!' : 'Add a row for new process'}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -237,7 +298,7 @@ export default function SchemaShowcase() {
                                         </div>
 
                                         {/* Centered note applying to the three grouped tables */}
-                                        <div style={{ marginTop: 8, textAlign: 'center', width: '100%' }} className="silo-note">
+                                        <div style={{ marginTop: 8, textAlign: 'center', width: '100%' }} className={`silo-note ${notePersistent ? 'persistent' : ''}`}>
                                             <span style={{ fontSize: 12 }}>No copy-paste; reuse core tables</span>
                                         </div>
                                     </div>
@@ -248,16 +309,16 @@ export default function SchemaShowcase() {
                                     {visibleRefProcesses.map((p) => (
                                         <div
                                             key={p}
-                                            className={`silo process-specific visible ${hoveredGood === p || selectedGood === p ? 'highlight' : ''}`}
-                                            onMouseEnter={() => setHoveredGood(p)}
-                                            onMouseLeave={() => setHoveredGood(null)}
-                                            onClick={() => setSelectedGood(selectedGood === p ? null : p)}
+                                            className={`silo process-specific visible`}
                                             role="button"
                                             tabIndex={0}
                                         >
                                             <div className="table small" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                                                 <IconTable title={`${p}Props`} />
-                                                <div style={{ marginTop: 4, fontSize: '0.9rem' }}>{p}Props<br /><small className="muted">(1 new table)</small></div>
+                                                <div style={{ marginTop: 4, fontSize: '0.9rem', textAlign: 'center' }}>
+                                                    {p}Props<br /><small className="muted">(1 new table)</small>
+                                                </div>
+                                                {newAdded === p && <span className="added-badge static" aria-hidden>Added</span>}
                                             </div>
                                         </div>
                                     ))}
@@ -268,6 +329,11 @@ export default function SchemaShowcase() {
                 </div>
             </div>
             <SchemaShowdown />
+
+            {/* Screen reader announcement area */}
+            <div aria-live="polite" className="sr-only" role="status">
+                {newAdded ? `${newAdded} added` : ''}
+            </div>
         </div>
     );
 }
