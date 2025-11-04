@@ -1,0 +1,288 @@
+﻿/* Minimal styles for the showcase animation panels */
+.animation-demo {
+    margin-top: 12px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+.controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.panels {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.panel {
+    flex: 1;
+    padding: 12px;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.panel.bad {
+    border: 2px solid #f8d7da;
+    background: #fff5f6;
+}
+
+.panel.good {
+    border: 2px solid #d1e7dd;
+    background: #f5fffa;
+}
+
+.silo-area {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+/* Use vertical stacking for bad silos rows */
+.silo-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.silo-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 8px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.02);
+}
+
+/* Silo group icon layout */
+.silo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.silo-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* icon box */
+.icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 88px;
+}
+
+.icon-svg {
+    width: 44px;
+    height: 44px;
+    color: #2f3e46;
+    display: block;
+}
+
+.icon-label {
+    font-size: 0.8rem;
+    color: rgba(0,0,0,0.75);
+    text-align: center;
+}
+
+/* small inline icon used in the ref table */
+.small-inline { width: 20px; height: 20px; display: inline-flex; vertical-align: middle; }
+.ref-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+
+/* existing table styles kept for compatibility */
+.table {
+    padding: 8px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.03);
+    min-width: 140px;
+    text-align: left;
+}
+
+.table.large {
+    min-width: 180px;
+    font-weight: 600;
+}
+
+.table.small {
+    min-width: 120px;
+    font-size: 0.9rem;
+}
+
+.table.reftable {
+    min-width: 160px;
+    background: rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.06);
+    padding: 10px;
+}
+
+.silo-note {
+    font-size: 0.8rem;
+    color: rgba(0,0,0,0.6);
+}
+
+.ref-note {
+    font-size: 0.8rem;
+    color: rgba(0,0,0,0.6);
+    margin-top: 6px;
+}
+
+.duplicate {
+    transform: translateY(-6px);
+    opacity: 0;
+    transition: transform 300ms ease, opacity 300ms ease;
+}
+
+.duplicate.visible {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.reuse {
+    transform: translateY(0);
+    opacity: 1;
+    transition: all 300ms ease;
+}
+
+.process-specific {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: all 300ms ease;
+}
+
+.process-specific.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.visible {
+    opacity: 1;
+    transition: opacity 300ms ease;
+}
+
+.bad .silo-note, .good .silo-note {
+    opacity: 0.6;
+}
+
+.badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 6px;
+    background: #f8d7da;
+    color: #842029;
+    border-radius: 12px;
+    font-size: 0.75rem;
+}
+
+.legend .muted {
+    color: rgba(0,0,0,0.6);
+}
+
+.muted {
+    color: rgba(0,0,0,0.6);
+    font-size: 0.9rem;
+}
+
+/* additions to support process details + highlights */
+.process-details {
+  border: 1px solid rgba(0,0,0,0.08);
+  padding: 10px;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  max-width: 880px;
+}
+.process-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.process-summary {
+  margin-bottom: 8px;
+}
+.process-props {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+.process-sql {
+  background: #0f1724;
+  color: #d1e8ff;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+.process-tips { margin: 0 0 8px 1rem; }
+.silo-row.highlight { outline: 2px solid rgba(13,110,253,0.15); box-shadow: 0 2px 8px rgba(13,110,253,0.07); background: rgba(13,110,253,0.03); }
+.ref-row[role="button"] { cursor: pointer; }
+/* Prominent "Duplicated!" badge for bad panel */
+.dupe-note {
+  display: inline-block;
+  background: linear-gradient(180deg, #fff0f0 0%, #ffe6e6 100%);
+  color: #c0392b;
+  border: 1px solid #e74c3c;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  box-shadow: 0 4px 10px rgba(199, 54, 54, 0.12);
+  transform-origin: center;
+  animation: dupePulse 1800ms ease-in-out infinite;
+}
+
+/* subtle attention animation */
+@keyframes dupePulse {
+  0% { transform: translateY(0) scale(1); box-shadow: 0 4px 10px rgba(199, 54, 54, 0.12); }
+  50% { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 18px rgba(199, 54, 54, 0.18); }
+  100% { transform: translateY(0) scale(1); box-shadow: 0 4px 10px rgba(199, 54, 54, 0.12); }
+}
+
+/* Add these styles to make the bad-panel warning stand out */
+
+.silo-note.silo-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #fff6f6 0%, #ffecec 100%);
+  color: #7a0b0b;
+  border: 1px solid #e74c3c;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 18px rgba(231, 76, 60, 0.12);
+  /* key changes for wrapping into two even rows */
+  max-width: 220px;      /* make box narrower to force wrap */
+  width: auto;
+  text-align: center;    /* center lines for even appearance */
+  white-space: normal;
+  line-height: 1.15;
+  hyphens: auto;
+  word-break: break-word;
+}
+
+/* ensure the text portion flows to multiple lines */
+.silo-note.silo-warning .warning-text {
+  display: block;
+  width: 100%;
+  margin: 0;
+}
+
+/* ensure the normal .silo-note remains readable */
+.silo-note {
+  color: #333;
+}
+
+/* Optional: stronger highlight for the whole silo-row when duplicated */
+.silo-row.duplicate.visible {
+  border-left: 4px solid #e74c3c55;
+  padding-left: 10px;
+}
