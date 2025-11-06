@@ -393,3 +393,46 @@
 @media (prefers-reduced-motion: reduce) {
   .silo-note.emphasize { animation: none; }
 }
+
+/* New: group styling for core tables (use same background/border as .table.reftable) */
+.core-group {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: center;
+  background: rgba(0,0,0,0.02); /* matches .table.reftable */
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 12px;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Individual core item */
+.core-silo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 120px;
+  padding: 6px;
+}
+
+/* Standardized title/font for core tables */
+.core-title {
+  margin-top: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0f1724;
+}
+
+/* FK helper, reuses muted color but slightly adjusted */
+.core-fk {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: rgba(0,0,0,0.6);
+}
+
+/* Respect reduced motion (no change but keep consistent) */
+@media (prefers-reduced-motion: reduce) {
+  .core-group { transition: none; }
+}
