@@ -3,6 +3,22 @@ import mermaid from 'mermaid';
 import './SchemaShowcase.css';
 import SchemaShowdown from './SchemaShowdown';
 
+/*
+Pseudocode / Plan (detailed):
+- Objective: Center both lines of the feature callout text in both the bad-panel and good-panel occurrences.
+- Locate the two `feature-note` divs:
+  1) In the bad panel: rendered for validations for Amplification/Quantification (`showValidations[s] && s !== 'Extraction'`).
+  2) In the good panel: the grouped center block next to `WorksheetValidations`.
+- Change approach:
+  - Add inline style `{ textAlign: 'center' }` to both `feature-note` divs so both lines (separated by `<br />`) are centered horizontally.
+  - Keep existing grid placement and `justifySelf: 'center'` for the bad panel element so cell alignment remains the same.
+  - Preserve ARIA attributes (`role="status" aria-live="polite"`) and existing class names.
+- Rationale:
+  - Minimal change, explicit centering of text.
+  - Avoids touching CSS files in case class styles are reused elsewhere.
+- Deliverable: Full updated `SchemaShowcase.jsx` with the two `feature-note` divs updated to center their text.
+*/
+
 export default function SchemaShowcase() {
     const [diagrams, setDiagrams] = useState({ legacy: '', normalized: '' });
     const [step, setStep] = useState(0);
@@ -194,16 +210,18 @@ export default function SchemaShowcase() {
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <IconItem Icon={IconVial} label={`${prefix}Specimen`} labelClass="core-title" />
-          {isDuplicate && (
-            <div style={{ marginTop: 8 }} className="dupe-note" role="status" aria-live="polite">
-              Duplicated!
-            </div>
-          )}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <IconItem Icon={IconPipette} label={`${prefix}Pipette`} labelClass="core-title" />
         </div>
+
+        {/* Place the "Duplicated!" callout in the second column below the icon row so it doesn't move icons */}
+        {isDuplicate && (
+          <div style={{ gridColumn: '2 / 3', justifySelf: 'center', marginTop: 8 }} className="dupe-note" role="status" aria-live="polite">
+            Duplicated!
+          </div>
+        )}
       </>
     );
 
@@ -255,30 +273,66 @@ export default function SchemaShowcase() {
                                         onMouseLeave={() => setHoveredBad(null)}
                                         onClick={() => setSelectedBad(selectedBad === s ? null : s)}
                                         style={{
-                                          display: 'grid',
-                                          gridTemplateColumns: 'repeat(3, minmax(120px, 1fr)) auto',
-                                          alignItems: 'center',
-                                          gap: 12,
-                                          position: 'relative'
+                                            display: 'grid',
+                                            gridTemplateColumns: '1fr 220px', // left = icons, right = validation column
+                                            gridTemplateRows: 'auto auto',    // top = icons, bottom = callouts
+                                            alignItems: 'center',
+                                            gap: 12,
+                                            position: 'relative'
                                         }}
                                     >
-                                        {/* icons group - show "Duplicated!" under Specimen when duplicate (i>0) */}
-                                        {renderBadIcons(s, i > 0)}
-
-                                        {/* right: validation table appears at step 3 with stagger */}
-                                        {showValidations[s] && (
-                                          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 6 }}>
-                                              <IconTable title={`${s}Validation`} />
-                                              <div className="core-title" style={{ marginTop: 6 }}>{s}Validation</div>
-                                              {/* Show Copy/Paste! only for Amplification and Quantification, positioned below the table */}
-                                              {s !== 'Extraction' && (
-                                                <div className="dupe-note" role="status" aria-live="polite" style={{ marginTop: 8 }}>
-                                                  Copy/Paste!
-                                                </div>
-                                              )}
+                                        {/* left column, top row: icons horizontally aligned */}
+                                        <div style={{ gridColumn: 1, gridRow: 1, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'flex-start' }}>
+                                            <IconItem Icon={IconTable} label={`${s} (Worksheets)`} labelClass="core-title" />
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                <IconItem Icon={IconVial} label={`${s}Specimen`} labelClass="core-title" />
                                             </div>
-                                          </div>
+                                            <IconItem Icon={IconPipette} label={`${s}Pipette`} labelClass="core-title" />
+                                        </div>
+
+                                        {/* left column, bottom row: duplicated callout (keeps icons from moving) */}
+                                        {i > 0 && (
+                                            <div
+                                                style={{
+                                                    gridColumn: 1,
+                                                    gridRow: 2,
+                                                    justifySelf: 'center',
+                                                    marginTop: 6
+                                                }}
+                                                className="dupe-note"
+                                                role="status"
+                                                aria-live="polite"
+                                            >
+                                                Duplicated!
+                                            </div>
+                                        )}
+
+                                        {/* right column, top row: validation icon + name */}
+                                        <div style={{ gridColumn: 2, gridRow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                            {showValidations[s] ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 6 }}>
+                                                    <IconTable title={`${s}Validation`} />
+                                                    <div className="core-title" style={{ marginTop: 6 }}>{s}Validation</div>
+                                                </div>
+                                            ) : null}
+                                        </div>
+
+                                        {/* right column, bottom row: Copy/Paste! callout for Amplification/Quantification */}
+                                        {showValidations[s] && s !== 'Extraction' && (
+                                            <div
+                                                style={{
+                                                    gridColumn: 2,
+                                                    gridRow: 2,
+                                                    justifySelf: 'center',
+                                                    marginTop: 6,
+                                                    textAlign: 'center' // center both lines of text
+                                                }}
+                                                className="dupe-note"
+                                                role="status"
+                                                aria-live="polite"
+                                            >
+                                                New Feature Scaling!<br />Copy/Paste!
+                                            </div>
                                         )}
                                     </div>
                                 ))}
@@ -344,17 +398,22 @@ export default function SchemaShowcase() {
                                                 <div className="core-silo">
                                                     <IconPipette title="Pipettes" />
                                                     <div className="core-title">Pipettes</div>
-                                                    <div className="core-fk muted">(FK to Worksheets)</div>
+                                                    <div className="core-fk muted">(FK in Worksheets)</div>
                                                 </div>
                                             </div>
 
                                             {/* Bottom row inside same border: centered WorksheetValidations */}
                                             {showValidations.Quantification && (
-                                              <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: 12 }}>
+                                              <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 12 }}>
                                                 <div className="core-silo" style={{ padding: 10 }}>
                                                   <IconTable title="WorksheetValidations" />
                                                   <div className="core-title" style={{ marginTop: 8, fontWeight: 600 }}>WorksheetValidations</div>
                                                   <div className="core-fk muted">(FK to Worksheets)</div>
+                                                </div>
+
+                                                {/* New: feature callout next to the validations table (green variant of dupe-note) */}
+                                                <div className="feature-note" role="status" aria-live="polite" style={{ textAlign: 'center' }}>
+                                                  New Feature Scaling!<br />No Copy/Paste!
                                                 </div>
                                               </div>
                                             )}

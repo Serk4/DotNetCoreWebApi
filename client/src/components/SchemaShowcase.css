@@ -236,37 +236,32 @@
   box-shadow: 0 4px 10px rgba(199, 54, 54, 0.12);
   transform-origin: center;
   animation: dupePulse 1800ms ease-in-out infinite;
-}
-
-/* subtle attention animation */
-@keyframes dupePulse {
-  0% { transform: translateY(0) scale(1); box-shadow: 0 4px 10px rgba(199, 54, 54, 0.12); }
-  50% { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 18px rgba(199, 54, 54, 0.18); }
-  100% { transform: translateY(0) scale(1); box-shadow: 0 4px 10px rgba(199, 54, 54, 0.12); }
-}
-
-/* Add these styles to make the bad-panel warning stand out */
-
-.silo-note.silo-warning {
-  display: inline-flex;
+  text-align: center;
+  /* if you want to center both axes inside a fixed-height container: */
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  background: linear-gradient(180deg, #fff6f6 0%, #ffecec 100%);
-  color: #7a0b0b;
-  border: 1px solid #e74c3c;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  box-shadow: 0 6px 18px rgba(231, 76, 60, 0.12);
-  /* key changes for wrapping into two even rows */
-  max-width: 220px;      /* make box narrower to force wrap */
-  width: auto;
-  text-align: center;    /* center lines for even appearance */
-  white-space: normal;
-  line-height: 1.15;
-  hyphens: auto;
-  word-break: break-word;
+  justify-content: center;
+}
+
+/* Green feature callout matching .dupe-note animation/style but green */
+.feature-note {
+    display: inline-block;
+    background: linear-gradient(180deg, #f0fff4 0%, #e6ffec 100%);
+    color: #155724;
+    border: 1px solid #28a745;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.12);
+    transform-origin: center;
+    animation: dupePulse 1800ms ease-in-out infinite;
+    /* if you want to center both axes inside a fixed-height container: */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 /* ensure the text portion flows to multiple lines */
