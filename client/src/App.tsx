@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import UsersList from './components/UsersList';
 import DnaProcessesList from './components/DnaProcessesList';
 import WorkflowsList from './components/WorkflowsList';
 import SchemaShowcase from './components/SchemaShowcase';
+import SchemaShowdown from './components/SchemaShowdown';
 import WorkflowRunner from './components/WorkflowRunner';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -11,13 +12,58 @@ const App: React.FC = () => {
     const [view, setView] = useState<'home' | 'users' | 'dnaProcesses' | 'workflows' | 'run'>('home');
     const [showWorkflowMenu, setShowWorkflowMenu] = useState(false);
 
+    // persisted choice to toggle between the two schema components
+    const [schemaView, setSchemaView] = useState<'showcase' | 'showdown'>(() => {
+        try {
+            return (localStorage.getItem('schemaView') as 'showcase' | 'showdown') ?? 'showcase';
+        } catch {
+            return 'showcase';
+        }
+    });
+    useEffect(() => {
+        try { localStorage.setItem('schemaView', schemaView); } catch {}
+    }, [schemaView]);
+
     const renderHome = () => (
         <div className="p-4">
             <h1>DNA Workflow</h1>
             <p>Welcome! Use the navigation to view users and create or run workflows.</p>
             <br />
+
+            {/* Schema Demo header with toggle moved under title/subtitle */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div>
+                    <h2 style={{ margin: 0 }}>Schema Demo</h2>
+                    <div style={{ fontSize: '0.85rem', color: 'rgba(0,0,0,0.6)' }}>Toggle the visualizer below</div>
+                </div>
+
+                <div role="tablist" aria-label="Schema view toggle" style={{ display: 'flex', gap: 8 }}>
+                    <button
+                        role="tab"
+                        aria-selected={schemaView === 'showcase'}
+                        onClick={() => setSchemaView('showcase')}
+                        className={`btn btn-sm ${schemaView === 'showcase' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    >
+                        Showcase
+                    </button>
+                    <button
+                        role="tab"
+                        aria-selected={schemaView === 'showdown'}
+                        onClick={() => setSchemaView('showdown')}
+                        className={`btn btn-sm ${schemaView === 'showdown' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    >
+                        Showdown
+                    </button>
+                </div>
+            </div>
+
+            <br />
             <hr />
-            <SchemaShowcase />
+
+            {/* Render the selected schema component */}
+            <div style={{ marginTop: 12 }}>
+                {schemaView === 'showcase' ? <SchemaShowcase /> : <SchemaShowdown />}
+            </div>
         </div>
     );
 

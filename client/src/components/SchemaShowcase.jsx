@@ -1,7 +1,6 @@
 ﻿import React, { useEffect, useState, useRef } from 'react';
 import mermaid from 'mermaid';
 import './SchemaShowcase.css';
-import SchemaShowdown from './SchemaShowdown';
 
 export default function SchemaShowcase() {
     const [diagrams, setDiagrams] = useState({ legacy: '', normalized: '' });
@@ -370,7 +369,7 @@ export default function SchemaShowcase() {
                         </div>
 
                         {/* Good panel: grouped center row for Worksheets, WorksheetSpecimen, Pipettes */}
-                        <div className="panel good">
+                        <div className="panel good" style={{ minHeight: 240 }}>
                             <h5>Good: Normalized Reuse</h5>
                             <div className="silo-area">
                                 {/* Top row */}
@@ -433,7 +432,7 @@ export default function SchemaShowcase() {
                                             </div>
 
                                             {/* Bottom row inside same border: centered WorksheetValidations */}
-                                            {showValidations.Quantification && (
+                                            {showGoodWorksheetValidations && (
                                               <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 12 }}>
                                                 <div className="core-silo" style={{ padding: 10 }}>
                                                   <IconTable title="WorksheetValidations" />
@@ -476,7 +475,6 @@ export default function SchemaShowcase() {
                     </div>
                 </div>
             </div>
-            <SchemaShowdown />
 
             {/* Screen reader announcement area */}
             <div aria-live="polite" className="sr-only" role="status">
