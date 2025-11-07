@@ -14,7 +14,7 @@ const App: React.FC = () => {
     const renderHome = () => (
         <div className="p-4">
             <h1>DNA Workflow</h1>
-            <p>Welcome — use the navigation to view users and other pages.</p>
+            <p>Welcome! Use the navigation to view users and create or run workflows.</p>
             <br />
             <hr />
             <SchemaShowcase />

@@ -235,112 +235,40 @@
   font-size: 0.92rem;
   box-shadow: 0 4px 10px rgba(199, 54, 54, 0.12);
   transform-origin: center;
+  /* keep animation here as well (redundant with the rule above) */
   animation: dupePulse 1800ms ease-in-out infinite;
-  text-align: center;
-  /* if you want to center both axes inside a fixed-height container: */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
 }
 
-/* Green feature callout matching .dupe-note animation/style but green */
+/* Green feature callout — same animation but green styling */
 .feature-note {
-    display: inline-block;
-    background: linear-gradient(180deg, #f0fff4 0%, #e6ffec 100%);
-    color: #155724;
-    border: 1px solid #28a745;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 0.92rem;
-    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.12);
-    transform-origin: center;
-    animation: dupePulse 1800ms ease-in-out infinite;
-    /* if you want to center both axes inside a fixed-height container: */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-/* ensure the text portion flows to multiple lines */
-.silo-note.silo-warning .warning-text {
-  display: block;
-  width: 100%;
-  margin: 0;
-}
-
-/* ensure the normal .silo-note remains readable */
-.silo-note {
-  color: #333;
-}
-
-/* Added: badge + highlight for newly added process (ref list + props box) */
-
-.added-badge {
   display: inline-block;
-  background: #e6ffef;
-  color: #056a28;
-  border: 1px solid #8fe0a3;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  background: linear-gradient(180deg, #f0fff4 0%, #e6ffec 100%);
+  color: #155724;
+  border: 1px solid #28a745;
+  padding: 8px 12px;
+  border-radius: 8px;
   font-weight: 700;
-  margin-left: 8px;
+  font-size: 0.92rem;
+  box-shadow: 0 4px 10px rgba(40, 167, 69, 0.12);
   transform-origin: center;
-  animation: badgePop 900ms cubic-bezier(.2,.9,.2,1);
+  animation: dupePulse 1800ms ease-in-out infinite;
 }
 
-/* Added rule: static (non-animated) badge version for _Props tables */
-.added-badge.static,
-.added-badge.static[aria-hidden] {
-  animation: none;
-  transform: none;
-  box-shadow: none;
-  /* ensure readable but subtle */
-  background: #e6ffef;
-  color: #056a28;
-  border: 1px solid #8fe0a3;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  margin-top: 8px;
-  display: inline-block;
+/* Ensure callouts always animate unless user requests reduced motion.
+   Force the animation on both dupe-note (red) and feature-note (green)
+   in case inline rules or other selectors interfered previously. */
+.dupe-note,
+.feature-note {
+  animation: dupePulse 1800ms ease-in-out infinite !important;
+  will-change: transform, box-shadow, opacity;
 }
 
-/* Highlight applied to the ref-row text or the props box */
-.new-row-highlight {
-  animation: newRowFlash 1200ms ease-out;
-  box-shadow: 0 8px 20px rgba(3,79,132,0.08);
-  border-radius: 6px;
-  /* gentle background so highlight reads on light/dark backgrounds */
-  background: linear-gradient(180deg, rgba(4,120,255,0.03) 0%, rgba(4,120,255,0.01) 100%);
-  padding: 2px 6px;
-}
-
-/* Animations */
-@keyframes badgePop {
-  0% { transform: scale(0.85); opacity: 0; }
-  60% { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes newRowFlash {
-  0% { transform: scale(1); background: rgba(4,120,255,0.00); box-shadow: 0 4px 8px rgba(3,79,132,0.03); }
-  30% { transform: scale(1.02); background: rgba(4,120,255,0.06); box-shadow: 0 12px 28px rgba(3,79,132,0.12); }
-  100% { transform: scale(1); background: rgba(4,120,255,0.00); box-shadow: 0 4px 8px rgba(3,79,132,0.03); }
-}
-
-/* Respect user preference for reduced motion */
+/* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-  .added-badge,
-  .new-row-highlight {
+  .dupe-note,
+  .feature-note {
     animation: none !important;
     transition: none !important;
-    transform: none !important;
-    box-shadow: none !important;
   }
 }
 
@@ -389,6 +317,13 @@
   .silo-note.emphasize { animation: none; }
 }
 
+/* New keyframes for dupePulse animation */
+@keyframes dupePulse {
+  0% { transform: translateY(0) scale(1); box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+  50% { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 22px rgba(0,0,0,0.12); }
+  100% { transform: translateY(0) scale(1); box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
+}
+
 /* New: group styling for core tables (use same background/border as .table.reftable) */
 .core-group {
   display: flex;
@@ -430,4 +365,27 @@
 /* Respect reduced motion (no change but keep consistent) */
 @media (prefers-reduced-motion: reduce) {
   .core-group { transition: none; }
+}
+
+/* Added-badge styling for DnaProcess ref list and props boxes */
+.added-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 4px 8px;
+  background: #e6ffef;
+  color: #056a28;
+  border: 1px solid #8fe0a3;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+  box-shadow: 0 6px 14px rgba(3,122,68,0.06);
+}
+
+/* Static (non-animated) variant used in props boxes */
+.added-badge.static {
+  animation: none;
+  transform: none;
+  box-shadow: none;
 }

@@ -3,22 +3,6 @@ import mermaid from 'mermaid';
 import './SchemaShowcase.css';
 import SchemaShowdown from './SchemaShowdown';
 
-/*
-Pseudocode / Plan (detailed):
-- Objective: Center both lines of the feature callout text in both the bad-panel and good-panel occurrences.
-- Locate the two `feature-note` divs:
-  1) In the bad panel: rendered for validations for Amplification/Quantification (`showValidations[s] && s !== 'Extraction'`).
-  2) In the good panel: the grouped center block next to `WorksheetValidations`.
-- Change approach:
-  - Add inline style `{ textAlign: 'center' }` to both `feature-note` divs so both lines (separated by `<br />`) are centered horizontally.
-  - Keep existing grid placement and `justifySelf: 'center'` for the bad panel element so cell alignment remains the same.
-  - Preserve ARIA attributes (`role="status" aria-live="polite"`) and existing class names.
-- Rationale:
-  - Minimal change, explicit centering of text.
-  - Avoids touching CSS files in case class styles are reused elsewhere.
-- Deliverable: Full updated `SchemaShowcase.jsx` with the two `feature-note` divs updated to center their text.
-*/
-
 export default function SchemaShowcase() {
     const [diagrams, setDiagrams] = useState({ legacy: '', normalized: '' });
     const [step, setStep] = useState(0);
@@ -88,6 +72,10 @@ export default function SchemaShowcase() {
     });
     const valTimers = useRef([]);
 
+    // NEW: separate state + timer for delaying the good-panel WorksheetValidations
+    const [showGoodWorksheetValidations, setShowGoodWorksheetValidations] = useState(false);
+    const goodValTimer = useRef(null);
+
     const nextStep = () =>
         setStep((prev) => {
             const next = Math.min(prev + 1, MAX_STEP);
@@ -101,6 +89,12 @@ export default function SchemaShowcase() {
                 // clear previous timers/state and hide validations before staggering
                 valTimers.current.forEach(t => clearTimeout(t));
                 setShowValidations({ Extraction: false, Amplification: false, Quantification: false });
+                // also reset good-panel validation visibility and any pending timer
+                if (goodValTimer.current) {
+                    clearTimeout(goodValTimer.current);
+                    goodValTimer.current = null;
+                }
+                setShowGoodWorksheetValidations(false);
 
                 // staggered appearance for validation tables (no changes to good panel)
                 valTimers.current.push(setTimeout(() => setShowValidations(s => ({ ...s, Extraction: true })), 600));
@@ -133,10 +127,35 @@ export default function SchemaShowcase() {
                 valTimers.current.forEach(t => clearTimeout(t));
                 valTimers.current = [];
                 setShowValidations({ Extraction: false, Amplification: false, Quantification: false });
+
+                // clear good-panel validation state/timer
+                if (goodValTimer.current) {
+                    clearTimeout(goodValTimer.current);
+                    goodValTimer.current = null;
+                }
+                setShowGoodWorksheetValidations(false);
             }
 
             return next;
         });
+
+    // start/clear the delayed show for the good panel when the bad-panel Quantification validation appears
+    useEffect(() => {
+        if (showValidations.Quantification) {
+            // small delay so bad-panel validations render first, then good panel's WorksheetValidations shows
+            if (goodValTimer.current) clearTimeout(goodValTimer.current);
+            goodValTimer.current = setTimeout(() => {
+                setShowGoodWorksheetValidations(true);
+                goodValTimer.current = null;
+            }, 700); // adjust delay as desired
+        } else {
+            if (goodValTimer.current) {
+                clearTimeout(goodValTimer.current);
+                goodValTimer.current = null;
+            }
+            setShowGoodWorksheetValidations(false);
+        }
+    }, [showValidations.Quantification]);
 
     // ensure timers are cleared on unmount
     useEffect(() => {
@@ -145,6 +164,10 @@ export default function SchemaShowcase() {
             if (newAddedTimer.current) clearTimeout(newAddedTimer.current);
             valTimers.current.forEach(t => clearTimeout(t));
             valTimers.current = [];
+            if (goodValTimer.current) {
+                clearTimeout(goodValTimer.current);
+                goodValTimer.current = null;
+            }
         };
     }, []);
 
@@ -163,6 +186,12 @@ export default function SchemaShowcase() {
         valTimers.current.forEach(t => clearTimeout(t));
         valTimers.current = [];
         setShowValidations({ Extraction: false, Amplification: false, Quantification: false });
+        // clear delayed good-panel timer / state
+        if (goodValTimer.current) {
+            clearTimeout(goodValTimer.current);
+            goodValTimer.current = null;
+        }
+        setShowGoodWorksheetValidations(false);
         if (flashTimer.current) {
             clearTimeout(flashTimer.current);
             flashTimer.current = null;
@@ -194,6 +223,7 @@ export default function SchemaShowcase() {
             <circle cx="17" cy="7" r="1.2" fill="currentColor" />
         </svg>
     );
+
     const IconItem = ({ Icon, label, small = false, labelClass = '' }) => (
         <div className={`icon ${small ? 'small-inline' : ''}`} aria-hidden>
             <Icon title={label} />
