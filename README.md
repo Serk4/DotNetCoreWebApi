@@ -20,9 +20,23 @@ The goal is to highlight:
 - **Seeded Data**: Baseline with 4 users (Admin, Technicians, Analyst), 3 processes, 1 default workflow with ordered steps, and a sample run with worksheets/step props.
 - **No Cascade Cycles**: FKs configured with `ON DELETE NO ACTION` to prevent SQL Server errors in complex deletes.
 - **React Integration**: Basic frontend stub in /client for API demos (e.g., users table); full UI planned.
+- **Interactive Schema Demos**: SchemaShowcase component with animated visualization showing legacy vs. normalized schema differences when adding new DNA processes. SchemaShowdown performance comparison tool demonstrates query efficiency gains.
+- **Diagnostic API**: DiagController provides endpoints for mermaid diagrams, performance showdowns, and safe workflow deletion patterns.
 
 ## Frontend
-The repository includes a basic React frontend stub in the `/client` folder to showcase API integration. It fetches and displays the seeded users in a simple table, demonstrating live data loading from the backend.
+The repository includes a React frontend in the `/client` folder to showcase API integration and schema design concepts.
+
+### Features
+- **Users Table**: Displays seeded users from `/api/users` with live data loading
+- **SchemaShowcase**: Interactive animated demo comparing legacy vs. normalized schema designs
+  - Shows duplication issues when adding new DNA processes in legacy schemas
+  - Demonstrates how normalized schemas reuse reference tables without duplication
+  - Features autoplay, adjustable interval, loop controls for presentation mode
+  - Visualizes validation table scaling scenarios
+- **SchemaShowdown**: Performance comparison tool
+  - Benchmarks optimized (single query with includes/projections) vs. naive (N+1 queries) approaches
+  - Displays metrics: duration, workflow count, process links
+  - Demonstrates real-world performance gains of normalized design
 
 ### How to Run the Frontend
 1. **Install Dependencies** (in repo root):
@@ -31,12 +45,12 @@ npm install
 
 2. **Start the React App**:
 - Run 'npm start'
-- Opens http://localhost:3000—shows the Users table populated from `/api/users`.
+- Opens http://localhost:3000—shows the Users table, schema demos, and performance tools
 - Ensure the API is running (`dotnet run`) for data.
 
-3. **Tech**: Create React App with TypeScript, Axios for API calls. Expandable for full UI (e.g., workflow builder).
+3. **Tech**: Create React App with TypeScript, Axios for API calls, Mermaid.js for diagrams. Expandable for full UI (e.g., workflow builder).
 
-See `/client/src/App.tsx` for the Users component. Future: Add forms for CRUD, routing, and styling (e.g., Material-UI).
+See `/client/src/App.tsx` for the main component, `/client/src/components/SchemaShowcase.jsx` for the interactive demo, and `/client/src/components/SchemaShowdown.jsx` for the performance comparison.
 
 ## Schema Overview
 The core is a hierarchical model:
@@ -82,6 +96,9 @@ All at `/api/{controller}` (e.g., `/api/workflows`). Test in Swagger at `/swagge
 | | PUT | /workflows/{id} | Update workflow. |
 | | DELETE | /workflows/{id} | Delete workflow. |
 | **WorkflowGroups** | GET | /workflowgroups/{id}/report | Ordered report of run (worksheets + processes). |
+| **Diag** | GET | /diag/mermaid | Returns mermaid diagram syntax for legacy vs. normalized schemas. |
+| | GET | /diag/showdown | Performance benchmark: optimized (single query) vs. naive (N+1) query patterns. |
+| | DELETE | /diag/workflow/{id} | Safe workflow deletion demo—removes dependent WorkflowProcesses first. |
 
 *Note*: DnaProcesses are ref data—seed via SQL inserts for dev (e.g., `INSERT INTO DnaProcesses (Name, Description) VALUES ('Purification', 'Cleanup step');`). New processes require adding a specific table (e.g., Purifications) and specimen pattern (e.g., PurificationSpecimen) to match schema.
 
