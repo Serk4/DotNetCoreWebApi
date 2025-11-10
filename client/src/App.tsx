@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import UsersList from './components/UsersList';
 import DnaProcessesList from './components/DnaProcessesList';
 import WorkflowsList from './components/WorkflowsList';
@@ -12,17 +12,8 @@ const App: React.FC = () => {
     const [view, setView] = useState<'home' | 'users' | 'dnaProcesses' | 'workflows' | 'run'>('home');
     const [showWorkflowMenu, setShowWorkflowMenu] = useState(false);
 
-    // persisted choice to toggle between the two schema components
-    const [schemaView, setSchemaView] = useState<'showcase' | 'showdown'>(() => {
-        try {
-            return (localStorage.getItem('schemaView') as 'showcase' | 'showdown') ?? 'showcase';
-        } catch {
-            return 'showcase';
-        }
-    });
-    useEffect(() => {
-        try { localStorage.setItem('schemaView', schemaView); } catch {}
-    }, [schemaView]);
+    // Always start with Showcase selected on page load
+    const [schemaView, setSchemaView] = useState<'showcase' | 'showdown'>('showcase');
 
     const renderHome = () => (
         <div className="p-4">

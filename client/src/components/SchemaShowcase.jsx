@@ -1,6 +1,17 @@
-﻿import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef, useCallback } from 'react';
 import mermaid from 'mermaid';
 import './SchemaShowcase.css';
+
+/* Keep PROCESSES and MAX_STEP stable across renders so they don't force
+   nextStep to change when linting dependency lists are checked. */
+const PROCESSES = ['Extraction', 'Amplification', 'Quantification'];
+const MAX_STEP = PROCESSES.length; // 3 processes -> steps 0..3 (step 3 = show validations)
+
+/* Timing: validation stagger ends at 3000ms (last setTimeout). Add buffer
+   so loop reset doesn't jump before final animations complete. */
+const VALIDATION_LAST_MS = 3000;
+const VALIDATION_BUFFER_MS = 1200;
+const RESET_WAIT_MS = VALIDATION_LAST_MS + VALIDATION_BUFFER_MS; // 4200ms
 
 export default function SchemaShowcase() {
     const [diagrams, setDiagrams] = useState({ legacy: '', normalized: '' });
@@ -9,18 +20,12 @@ export default function SchemaShowcase() {
     const [intervalMs, setIntervalMs] = useState(1500);
     const [loop, setLoop] = useState(true);
 
-    // independent hover/selection state for each panel
+    // independent hover/selection state for bad panel only
     const [hoveredBad, setHoveredBad] = useState(null);
     const [selectedBad, setSelectedBad] = useState(null);
-    const [hoveredGood, setHoveredGood] = useState(null);
-    const [selectedGood, setSelectedGood] = useState(null);
 
     const legacyRef = useRef(null);
     const normRef = useRef(null);
-
-    const PROCESSES = ['Extraction', 'Amplification', 'Quantification'];
-    // allow one extra step for validations
-    const MAX_STEP = PROCESSES.length; // 3 processes -> steps 0..3 (step 3 = show validations)
 
     useEffect(() => {
         mermaid.initialize({ startOnLoad: false });
@@ -41,29 +46,13 @@ export default function SchemaShowcase() {
         }
     }, [diagrams]);
 
-    // Auto-advance
-    useEffect(() => {
-        if (!autoplay) return undefined;
-        const id = setInterval(() => {
-            setStep(prev => {
-                if (prev < MAX_STEP) return prev + 1;
-                if (loop) return 0;
-                setAutoplay(false);
-                return prev;
-            });
-        }, Math.max(250, Number(intervalMs) || 1500));
-        return () => clearInterval(id);
-    }, [autoplay, intervalMs, loop, MAX_STEP]);
-
     const [flashRefNote, setFlashRefNote] = useState(false);
     const flashTimer = useRef(null);
     const [newAdded, setNewAdded] = useState(null);
     const newAddedTimer = useRef(null);
 
-    // NEW: keep the center note static after the first Add action
     const [notePersistent, setNotePersistent] = useState(false);
 
-    // validation appearance tracking + timers
     const [showValidations, setShowValidations] = useState({
         Extraction: false,
         Amplification: false,
@@ -71,31 +60,89 @@ export default function SchemaShowcase() {
     });
     const valTimers = useRef([]);
 
-    // NEW: separate state + timer for delaying the good-panel WorksheetValidations
     const [showGoodWorksheetValidations, setShowGoodWorksheetValidations] = useState(false);
     const goodValTimer = useRef(null);
 
-    const nextStep = () =>
+    // helpers to read current autoplay/loop from memoized nextStep without adding deps
+    const autoplayRef = useRef(autoplay);
+    useEffect(() => { autoplayRef.current = autoplay; }, [autoplay]);
+    const loopRef = useRef(loop);
+    useEffect(() => { loopRef.current = loop; }, [loop]);
+
+    // keep a ref to indicate a pending reset scheduled by autoplay so we don't schedule multiple
+    const waitingResetRef = useRef(false);
+    const resetTimerRef = useRef(null);
+
+    // Keep a ref to the "nextStep" function so the autoplay interval can call the latest impl.
+    const nextStepRef = useRef(null);
+
+    // Memoize nextStep so it is stable across renders and can be used in effect deps.
+    const nextStep = useCallback(() =>
         setStep((prev) => {
+            // If we're already on final step
+            if (prev === MAX_STEP) {
+                if (loopRef.current) {
+                    // If autoplay is active, schedule a delayed reset allowing validations to finish.
+                    if (autoplayRef.current) {
+                        if (!waitingResetRef.current) {
+                            waitingResetRef.current = true;
+                            // schedule a reset after the last validation + buffer
+                            resetTimerRef.current = setTimeout(() => {
+                                // clear validation timers and state
+                                valTimers.current.forEach(t => clearTimeout(t));
+                                valTimers.current = [];
+                                setShowValidations({ Extraction: false, Amplification: false, Quantification: false });
+                                if (goodValTimer.current) { clearTimeout(goodValTimer.current); goodValTimer.current = null; }
+                                setShowGoodWorksheetValidations(false);
+
+                                // reset transient UI and go back to step 0
+                                setFlashRefNote(false);
+                                setNewAdded(null);
+                                setNotePersistent(false);
+                                setStep(0);
+
+                                waitingResetRef.current = false;
+                                resetTimerRef.current = null;
+                            }, RESET_WAIT_MS);
+                        }
+                        // while waiting, keep on the final step
+                        return prev;
+                    } else {
+                        // not autoplaying (manual Next on final step and loop enabled) -> wrap immediately
+                        valTimers.current.forEach(t => clearTimeout(t));
+                        valTimers.current = [];
+                        setShowValidations({ Extraction: false, Amplification: false, Quantification: false });
+                        if (goodValTimer.current) { clearTimeout(goodValTimer.current); goodValTimer.current = null; }
+                        setShowGoodWorksheetValidations(false);
+                        setFlashRefNote(false);
+                        setNewAdded(null);
+                        setNotePersistent(false);
+                        return 0;
+                    }
+                } else {
+                    // loop disabled, stay at final step
+                    return prev;
+                }
+            }
+
             const next = Math.min(prev + 1, MAX_STEP);
 
             // If we're advancing into the validation step, only start the validation timers
             // and do NOT touch the DnaProcess ref-table animation state (no `newAdded` or `flashRefNote`).
             if (next === MAX_STEP && next !== prev) {
-                // make the center note persistent from now on
                 setNotePersistent(true);
 
-                // clear previous timers/state and hide validations before staggering
                 valTimers.current.forEach(t => clearTimeout(t));
+                valTimers.current = [];
                 setShowValidations({ Extraction: false, Amplification: false, Quantification: false });
-                // also reset good-panel validation visibility and any pending timer
+
                 if (goodValTimer.current) {
                     clearTimeout(goodValTimer.current);
                     goodValTimer.current = null;
                 }
                 setShowGoodWorksheetValidations(false);
 
-                // staggered appearance for validation tables (no changes to good panel)
+                // staggered appearance for validation tables
                 valTimers.current.push(setTimeout(() => setShowValidations(s => ({ ...s, Extraction: true })), 600));
                 valTimers.current.push(setTimeout(() => setShowValidations(s => ({ ...s, Amplification: true })), 1800));
                 valTimers.current.push(setTimeout(() => setShowValidations(s => ({ ...s, Quantification: true })), 3000));
@@ -108,8 +155,7 @@ export default function SchemaShowcase() {
                 if (flashTimer.current) clearTimeout(flashTimer.current);
                 flashTimer.current = setTimeout(() => setFlashRefNote(false), 900);
 
-                // Show 'Added' badge only for processes after the original (never for Extraction).
-                const addedIndex = next; // when step becomes 1 -> Amplification, 2 -> Quantification
+                const addedIndex = next;
                 if (addedIndex > 0 && addedIndex < PROCESSES.length) {
                     const addedProcess = PROCESSES[addedIndex];
                     setNewAdded(addedProcess);
@@ -119,15 +165,12 @@ export default function SchemaShowcase() {
                     setNewAdded(null);
                 }
 
-                // make the center note persistent from now on
                 setNotePersistent(true);
 
-                // ensure validations are cleared if we're leaving that step
                 valTimers.current.forEach(t => clearTimeout(t));
                 valTimers.current = [];
                 setShowValidations({ Extraction: false, Amplification: false, Quantification: false });
 
-                // clear good-panel validation state/timer
                 if (goodValTimer.current) {
                     clearTimeout(goodValTimer.current);
                     goodValTimer.current = null;
@@ -136,17 +179,31 @@ export default function SchemaShowcase() {
             }
 
             return next;
-        });
+        }), []); // relies on refs and top-level stable constants
 
-    // start/clear the delayed show for the good panel when the bad-panel Quantification validation appears
+    // Keep the ref up-to-date with the latest nextStep implementation
+    useEffect(() => {
+        nextStepRef.current = nextStep;
+    }, [nextStep]);
+
+    // Auto-advance (uses nextStepRef so autoplay triggers same logic as manual Next)
+    useEffect(() => {
+        if (!autoplay) return undefined;
+        const tick = () => {
+            if (nextStepRef.current) nextStepRef.current();
+        };
+        const id = setInterval(tick, Math.max(250, Number(intervalMs) || 1500));
+        return () => clearInterval(id);
+    }, [autoplay, intervalMs, loop]);
+
+    // when validations fully show, stagger good-panel after quantification
     useEffect(() => {
         if (showValidations.Quantification) {
-            // small delay so bad-panel validations render first, then good panel's WorksheetValidations shows
             if (goodValTimer.current) clearTimeout(goodValTimer.current);
             goodValTimer.current = setTimeout(() => {
                 setShowGoodWorksheetValidations(true);
                 goodValTimer.current = null;
-            }, 700); // adjust delay as desired
+            }, 700);
         } else {
             if (goodValTimer.current) {
                 clearTimeout(goodValTimer.current);
@@ -167,6 +224,11 @@ export default function SchemaShowcase() {
                 clearTimeout(goodValTimer.current);
                 goodValTimer.current = null;
             }
+            if (resetTimerRef.current) {
+                clearTimeout(resetTimerRef.current);
+                resetTimerRef.current = null;
+                waitingResetRef.current = false;
+            }
         };
     }, []);
 
@@ -175,17 +237,12 @@ export default function SchemaShowcase() {
         setStep(0);
         setSelectedBad(null);
         setHoveredBad(null);
-        setSelectedGood(null);
-        setHoveredGood(null);
         setFlashRefNote(false);
         setNewAdded(null);
-        // reset the persistent note
         setNotePersistent(false);
-        // clear validation timers and hide tables
         valTimers.current.forEach(t => clearTimeout(t));
         valTimers.current = [];
         setShowValidations({ Extraction: false, Amplification: false, Quantification: false });
-        // clear delayed good-panel timer / state
         if (goodValTimer.current) {
             clearTimeout(goodValTimer.current);
             goodValTimer.current = null;
@@ -198,6 +255,11 @@ export default function SchemaShowcase() {
         if (newAddedTimer.current) {
             clearTimeout(newAddedTimer.current);
             newAddedTimer.current = null;
+        }
+        if (resetTimerRef.current) {
+            clearTimeout(resetTimerRef.current);
+            resetTimerRef.current = null;
+            waitingResetRef.current = false;
         }
     };
 
@@ -230,30 +292,6 @@ export default function SchemaShowcase() {
         </div>
     );
 
-    // Bad panel renderer (updated)
-    const renderBadIcons = (prefix, isDuplicate = false) => (
-      <>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <IconItem Icon={IconTable} label={`${prefix} (Worksheets)`} labelClass="core-title" />
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <IconItem Icon={IconVial} label={`${prefix}Specimen`} labelClass="core-title" />
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <IconItem Icon={IconPipette} label={`${prefix}Pipette`} labelClass="core-title" />
-        </div>
-
-        {/* Place the "Duplicated!" callout in the second column below the icon row so it doesn't move icons */}
-        {isDuplicate && (
-          <div style={{ gridColumn: '2 / 3', justifySelf: 'center', marginTop: 8 }} className="dupe-note" role="status" aria-live="polite">
-            Duplicated!
-          </div>
-        )}
-      </>
-    );
-
     // Good panel: simplified independent rendering
     const visibleRefProcesses = PROCESSES.slice(0, Math.min(step + 1, PROCESSES.length));
     const badSilos = ['Extraction'];
@@ -270,7 +308,7 @@ export default function SchemaShowcase() {
             <div style={{ gridColumn: '1 / span 2' }}>
                 <div className="controls" style={{ marginBottom: 8 }}>
                     <button onClick={prevStep}>◀</button>
-                    <button onClick={nextStep} style={{ marginLeft: 6 }}>▶ Add New Process</button>
+                    <button onClick={() => nextStep()} style={{ marginLeft: 6 }}>▶ Add New Process</button>
                     <button onClick={reset} style={{ marginLeft: 8 }}>Reset</button>
 
                     <button onClick={() => setAutoplay(a => !a)} style={{ marginLeft: 12 }}>{autoplay ? 'Pause Auto' : 'Auto Play'}</button>
@@ -303,14 +341,13 @@ export default function SchemaShowcase() {
                                         onClick={() => setSelectedBad(selectedBad === s ? null : s)}
                                         style={{
                                             display: 'grid',
-                                            gridTemplateColumns: '1fr 220px', // left = icons, right = validation column
-                                            gridTemplateRows: 'auto auto',    // top = icons, bottom = callouts
+                                            gridTemplateColumns: '1fr 220px',
+                                            gridTemplateRows: 'auto auto',
                                             alignItems: 'center',
                                             gap: 12,
                                             position: 'relative'
                                         }}
                                     >
-                                        {/* left column, top row: icons horizontally aligned */}
                                         <div style={{ gridColumn: 1, gridRow: 1, display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'flex-start' }}>
                                             <IconItem Icon={IconTable} label={`${s} (Worksheets)`} labelClass="core-title" />
                                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -319,24 +356,12 @@ export default function SchemaShowcase() {
                                             <IconItem Icon={IconPipette} label={`${s}Pipette`} labelClass="core-title" />
                                         </div>
 
-                                        {/* left column, bottom row: duplicated callout (keeps icons from moving) */}
                                         {i > 0 && (
-                                            <div
-                                                style={{
-                                                    gridColumn: 1,
-                                                    gridRow: 2,
-                                                    justifySelf: 'center',
-                                                    marginTop: 6
-                                                }}
-                                                className="dupe-note"
-                                                role="status"
-                                                aria-live="polite"
-                                            >
+                                            <div style={{ gridColumn: 1, gridRow: 2, justifySelf: 'center', marginTop: 6 }} className="dupe-note" role="status" aria-live="polite">
                                                 Duplicated!
                                             </div>
                                         )}
 
-                                        {/* right column, top row: validation icon + name */}
                                         <div style={{ gridColumn: 2, gridRow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                             {showValidations[s] ? (
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 6 }}>
@@ -346,20 +371,8 @@ export default function SchemaShowcase() {
                                             ) : null}
                                         </div>
 
-                                        {/* right column, bottom row: Copy/Paste! callout for Amplification/Quantification */}
                                         {showValidations[s] && s !== 'Extraction' && (
-                                            <div
-                                                style={{
-                                                    gridColumn: 2,
-                                                    gridRow: 2,
-                                                    justifySelf: 'center',
-                                                    marginTop: 6,
-                                                    textAlign: 'center' // center both lines of text
-                                                }}
-                                                className="dupe-note"
-                                                role="status"
-                                                aria-live="polite"
-                                            >
+                                            <div style={{ gridColumn: 2, gridRow: 2, justifySelf: 'center', marginTop: 6, textAlign: 'center' }} className="dupe-note" role="status" aria-live="polite">
                                                 New Feature Scaling!<br />Copy/Paste!
                                             </div>
                                         )}
@@ -372,9 +385,7 @@ export default function SchemaShowcase() {
                         <div className="panel good" style={{ minHeight: 240 }}>
                             <h5>Good: Normalized Reuse</h5>
                             <div className="silo-area">
-                                {/* Top row */}
                                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', width: '100%' }}>
-                                    {/* DnaProcess ref list with IconTable and caption */}
                                     <div className="ref" style={{ minWidth: 220 }}>
                                         <div className="table reftable" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 12 }}>
                                             <IconTable title="DnaProcess (ref table)" />
@@ -383,34 +394,21 @@ export default function SchemaShowcase() {
                                             <div style={{ marginTop: 10, width: '100%' }}>
                                                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                                                     {visibleRefProcesses.map((p) => (
-                                                        <div
-                                                            key={p}
-                                                            className="ref-row"
-                                                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}
-                                                            aria-hidden
-                                                        >
-                                                            <div style={{ fontWeight: 400 }} className={newAdded === p ? 'new-row-highlight' : ''}>
-                                                                {p}
-                                                            </div>
+                                                        <div key={p} className="ref-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }} aria-hidden>
+                                                            <div style={{ fontWeight: 400 }} className={newAdded === p ? 'new-row-highlight' : ''}>{p}</div>
                                                             {newAdded === p && <span className="added-badge" aria-hidden>Added</span>}
                                                         </div>
                                                     ))}
                                                 </ul>
                                             </div>
-                                            <div
-                                                style={{ marginTop: 6, fontSize: 12 }}
-                                                className={`silo-note ${flashRefNote ? 'emphasize' : ''} ${notePersistent ? 'persistent' : ''}`}
-                                                aria-live="polite"
-                                            >
+                                            <div style={{ marginTop: 6, fontSize: 12 }} className={`silo-note ${flashRefNote ? 'emphasize' : ''} ${notePersistent ? 'persistent' : ''}`} aria-live="polite">
                                                 {flashRefNote ? 'Row Inserted!' : 'Add a row for new process'}
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Grouped center block: Worksheets | WorksheetSpecimen | Pipettes */}
                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                         <div className="core-group" style={{ width: '100%', justifyContent: 'center', flexWrap: 'wrap', gap: 24 }}>
-                                            {/* Top row: three core items */}
                                             <div style={{ display: 'flex', gap: 24, width: '100%', justifyContent: 'center', alignItems: 'flex-start' }}>
                                                 <div className="core-silo">
                                                     <IconTable title="Worksheets" />
@@ -431,7 +429,6 @@ export default function SchemaShowcase() {
                                                 </div>
                                             </div>
 
-                                            {/* Bottom row inside same border: centered WorksheetValidations */}
                                             {showGoodWorksheetValidations && (
                                               <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 12 }}>
                                                 <div className="core-silo" style={{ padding: 10 }}>
@@ -440,25 +437,19 @@ export default function SchemaShowcase() {
                                                   <div className="core-fk muted">(FK to Worksheets)</div>
                                                 </div>
 
-                                                {/* New: feature callout next to the validations table (green variant of dupe-note) */}
                                                 <div className="feature-note" role="status" aria-live="polite" style={{ textAlign: 'center' }}>
                                                   New Feature Scaling!<br />No Copy/Paste!
                                                 </div>
                                               </div>
                                             )}
+
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* second row: props tables for visible processes */}
                                 <div style={{ marginTop: 12, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                                     {visibleRefProcesses.map((p) => (
-                                        <div
-                                            key={p}
-                                            className={`silo process-specific visible`}
-                                            role="button"
-                                            tabIndex={0}
-                                        >
+                                        <div key={p} className={`silo process-specific visible`} role="button" tabIndex={0}>
                                             <div className="table small" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                                                 <IconTable title={`${p}Props`} />
                                                 <div style={{ marginTop: 4, textAlign: 'center' }}>
@@ -476,7 +467,6 @@ export default function SchemaShowcase() {
                 </div>
             </div>
 
-            {/* Screen reader announcement area */}
             <div aria-live="polite" className="sr-only" role="status">
                 {newAdded ? `${newAdded} added` : ''}
             </div>

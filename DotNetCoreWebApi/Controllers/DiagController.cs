@@ -17,22 +17,22 @@ namespace DotNetCoreWebApi.Controllers
         public IActionResult GetMermaidDiagrams()
         {
             var legacy = @"
-graph LR
-  UserB[""User - nvarchar PK\nusername""] --> WorkflowB[""workflow - int PK\ncreatedBy nvarchar (String Mismatch!)""]
-  WorkflowB --> WPB[""workflowProcess\nprocessCode nvarchar (Half-Ref to DnaProcess)""]
-  WPB --> DPB[""DnaProcess - nvarchar PK\nUnderused""]
-  WorkflowB --> WWLB[""WorksheetWorkflowLink\nGeneric worksheetId int\nprocessCode nvarchar Ref""]
-  WWLB -.->|""String Checks""| ExtractionB[""extraction Silo + Dupes\nex_Prop1""]
-  WWLB -.->|""String Checks""| AmplificationB[""amplification Silo + Dupes\nam_Prop1""]
-";
+                graph LR
+                  UserB[""User - nvarchar PK\nusername""] --> WorkflowB[""workflow - int PK\ncreatedBy nvarchar (String Mismatch!)""]
+                  WorkflowB --> WPB[""workflowProcess\nprocessCode nvarchar (Half-Ref to DnaProcess)""]
+                  WPB --> DPB[""DnaProcess - nvarchar PK\nUnderused""]
+                  WorkflowB --> WWLB[""WorksheetWorkflowLink\nGeneric worksheetId int\nprocessCode nvarchar Ref""]
+                  WWLB -.->|""String Checks""| ExtractionB[""extraction Silo + Dupes\nex_Prop1""]
+                  WWLB -.->|""String Checks""| AmplificationB[""amplification Silo + Dupes\nam_Prop1""]
+                ";
             var normalized = @"
-graph LR
-  UserG[""Users - int PK""] --> WorkflowG[""Workflows\nCreatedBy int FK""]
-  WorkflowG --> WPG[""WorkflowProcesses\nDnaProcessId int FK""]
-  WPG --> DPG[""DnaProcesses - int PK Ref""]
-  WorkflowG --> WsG[""Worksheets""]
-  WsG --> WWGG[""WorksheetWorkflowGroups\nTyped FKs""]
-";
+                graph LR
+                  UserG[""Users - int PK""] --> WorkflowG[""Workflows\nCreatedBy int FK""]
+                  WorkflowG --> WPG[""WorkflowProcesses\nDnaProcessId int FK""]
+                  WPG --> DPG[""DnaProcesses - int PK Ref""]
+                  WorkflowG --> WsG[""Worksheets""]
+                  WsG --> WWGG[""WorksheetWorkflowGroups\nTyped FKs""]
+                ";
             return Ok(new { legacy, normalized });
         }
 
