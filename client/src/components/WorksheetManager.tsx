@@ -193,8 +193,8 @@ export default function WorksheetManager(): JSX.Element {
         </div>
       ) : (
         <div>
-          {intersections.map((intersection, idx) => (
-            <div key={idx} className="card mb-3">
+          {intersections.map((intersection) => (
+            <div key={intersection.dnaProcessId} className="card mb-3">
               <div className="card-header bg-warning text-dark">
                 <h5 className="mb-0">
                   <strong>{intersection.dnaProcessName}</strong> - {intersection.worksheetCount} worksheets can be batched

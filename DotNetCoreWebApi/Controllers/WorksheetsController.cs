@@ -275,6 +275,15 @@ namespace DotNetCoreWebApi.Controllers
             var wwg = worksheet.WorksheetWorkflowGroups.FirstOrDefault();
             if (wwg != null)
             {
+                if (wwg.WorkflowGroup == null || wwg.WorkflowGroup.Workflow == null)
+                {
+                    return Ok(new
+                    {
+                        CompletedWorksheetId = id,
+                        Message = "Worksheet completed (no workflow found)"
+                    });
+                }
+
                 var workflow = wwg.WorkflowGroup.Workflow;
                 var currentStepOrder = wwg.StepOrder;
                 
@@ -286,6 +295,11 @@ namespace DotNetCoreWebApi.Controllers
 
                 if (nextProcess != null)
                 {
+                    if (nextProcess.DnaProcess == null)
+                    {
+                        return BadRequest("Next process has no DNA process defined");
+                    }
+
                     // Create next worksheet
                     var nextWorksheet = new Worksheet
                     {
@@ -344,22 +358,26 @@ namespace DotNetCoreWebApi.Controllers
             var worksheets = await query.ToListAsync();
 
             var list = worksheets
-                .Select(w => new
+                .Select(w =>
                 {
-                    w.Id,
-                    w.Name,
-                    Analyst = new { w.Analyst.Id, w.Analyst.UserName },
-                    DnaProcess = new { w.DnaProcess.Id, w.DnaProcess.Name },
-                    w.Status,
-                    w.StartAt,
-                    WorkflowGroup = w.WorksheetWorkflowGroups.FirstOrDefault() != null
-                        ? new
-                        {
-                            Id = w.WorksheetWorkflowGroups.First().WorkflowGroup.Id,
-                            RunName = w.WorksheetWorkflowGroups.First().WorkflowGroup.RunName,
-                            StepOrder = w.WorksheetWorkflowGroups.First().StepOrder
-                        }
-                        : null
+                    var firstWwg = w.WorksheetWorkflowGroups.FirstOrDefault();
+                    return new
+                    {
+                        w.Id,
+                        w.Name,
+                        Analyst = new { w.Analyst.Id, w.Analyst.UserName },
+                        DnaProcess = new { w.DnaProcess.Id, w.DnaProcess.Name },
+                        w.Status,
+                        w.StartAt,
+                        WorkflowGroup = firstWwg != null
+                            ? new
+                            {
+                                Id = firstWwg.WorkflowGroup.Id,
+                                RunName = firstWwg.WorkflowGroup.RunName,
+                                StepOrder = firstWwg.StepOrder
+                            }
+                            : null
+                    };
                 })
                 .OrderBy(w => w.WorkflowGroup != null ? w.WorkflowGroup.StepOrder : 999)
                 .ToList();
@@ -387,22 +405,26 @@ namespace DotNetCoreWebApi.Controllers
             var worksheets = await query.ToListAsync();
 
             var list = worksheets
-                .Select(w => new
+                .Select(w =>
                 {
-                    w.Id,
-                    w.Name,
-                    Analyst = new { w.Analyst.Id, w.Analyst.UserName },
-                    DnaProcess = new { w.DnaProcess.Id, w.DnaProcess.Name },
-                    w.Status,
-                    w.StartAt,
-                    WorkflowGroup = w.WorksheetWorkflowGroups.FirstOrDefault() != null
-                        ? new
-                        {
-                            Id = w.WorksheetWorkflowGroups.First().WorkflowGroup.Id,
-                            RunName = w.WorksheetWorkflowGroups.First().WorkflowGroup.RunName,
-                            StepOrder = w.WorksheetWorkflowGroups.First().StepOrder
-                        }
-                        : null
+                    var firstWwg = w.WorksheetWorkflowGroups.FirstOrDefault();
+                    return new
+                    {
+                        w.Id,
+                        w.Name,
+                        Analyst = new { w.Analyst.Id, w.Analyst.UserName },
+                        DnaProcess = new { w.DnaProcess.Id, w.DnaProcess.Name },
+                        w.Status,
+                        w.StartAt,
+                        WorkflowGroup = firstWwg != null
+                            ? new
+                            {
+                                Id = firstWwg.WorkflowGroup.Id,
+                                RunName = firstWwg.WorkflowGroup.RunName,
+                                StepOrder = firstWwg.StepOrder
+                            }
+                            : null
+                    };
                 })
                 .OrderBy(w => w.StartAt)
                 .ToList();
@@ -434,21 +456,25 @@ namespace DotNetCoreWebApi.Controllers
                     DnaProcessId = g.Key,
                     DnaProcessName = g.First().DnaProcess.Name,
                     WorksheetCount = g.Count(),
-                    Worksheets = g.Select(w => new
+                    Worksheets = g.Select(w =>
                     {
-                        w.Id,
-                        w.Name,
-                        Analyst = new { w.Analyst.Id, w.Analyst.UserName },
-                        w.Status,
-                        w.StartAt,
-                        WorkflowGroup = w.WorksheetWorkflowGroups.FirstOrDefault() != null
-                            ? new
-                            {
-                                Id = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.Id,
-                                RunName = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.RunName,
-                                WorkflowName = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.Workflow.Name
-                            }
-                            : null
+                        var firstWwg = w.WorksheetWorkflowGroups.FirstOrDefault();
+                        return new
+                        {
+                            w.Id,
+                            w.Name,
+                            Analyst = new { w.Analyst.Id, w.Analyst.UserName },
+                            w.Status,
+                            w.StartAt,
+                            WorkflowGroup = firstWwg != null
+                                ? new
+                                {
+                                    Id = firstWwg.WorkflowGroup.Id,
+                                    RunName = firstWwg.WorkflowGroup.RunName,
+                                    WorkflowName = firstWwg.WorkflowGroup.Workflow.Name
+                                }
+                                : null
+                        };
                     }).ToList(),
                     PotentialSavings = "Can batch process multiple samples together"
                 })
