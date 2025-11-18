@@ -341,7 +341,9 @@ namespace DotNetCoreWebApi.Controllers
                 query = query.Where(w => w.AnalystId == analystId.Value);
             }
 
-            var list = await query
+            var worksheets = await query.ToListAsync();
+
+            var list = worksheets
                 .Select(w => new
                 {
                     w.Id,
@@ -353,14 +355,14 @@ namespace DotNetCoreWebApi.Controllers
                     WorkflowGroup = w.WorksheetWorkflowGroups.FirstOrDefault() != null
                         ? new
                         {
-                            Id = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.Id,
-                            RunName = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.RunName,
-                            StepOrder = w.WorksheetWorkflowGroups.FirstOrDefault()!.StepOrder
+                            Id = w.WorksheetWorkflowGroups.First().WorkflowGroup.Id,
+                            RunName = w.WorksheetWorkflowGroups.First().WorkflowGroup.RunName,
+                            StepOrder = w.WorksheetWorkflowGroups.First().StepOrder
                         }
                         : null
                 })
                 .OrderBy(w => w.WorkflowGroup != null ? w.WorkflowGroup.StepOrder : 999)
-                .ToListAsync();
+                .ToList();
 
             return Ok(list);
         }
@@ -382,7 +384,9 @@ namespace DotNetCoreWebApi.Controllers
                 query = query.Where(w => w.AnalystId == analystId.Value);
             }
 
-            var list = await query
+            var worksheets = await query.ToListAsync();
+
+            var list = worksheets
                 .Select(w => new
                 {
                     w.Id,
@@ -394,14 +398,14 @@ namespace DotNetCoreWebApi.Controllers
                     WorkflowGroup = w.WorksheetWorkflowGroups.FirstOrDefault() != null
                         ? new
                         {
-                            Id = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.Id,
-                            RunName = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.RunName,
-                            StepOrder = w.WorksheetWorkflowGroups.FirstOrDefault()!.StepOrder
+                            Id = w.WorksheetWorkflowGroups.First().WorkflowGroup.Id,
+                            RunName = w.WorksheetWorkflowGroups.First().WorkflowGroup.RunName,
+                            StepOrder = w.WorksheetWorkflowGroups.First().StepOrder
                         }
                         : null
                 })
                 .OrderBy(w => w.StartAt)
-                .ToListAsync();
+                .ToList();
 
             return Ok(list);
         }
