@@ -17,7 +17,7 @@ builder.Services.AddSwaggerGen(c =>
    c.SwaggerDoc("v1", new() { Title = "DNA Workflow API", Version = "v1" });
 });
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite("Data Source=dnaworkflow.db"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddCors(options => {
     options.AddDefaultPolicy(policy => policy
@@ -44,13 +44,6 @@ else if (Directory.Exists(defaultWwwroot))
 }
 
 var app = builder.Build();
-
-// Ensure database is created and seeded
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.EnsureCreated();
-}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
