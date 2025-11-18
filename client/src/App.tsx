@@ -5,11 +5,12 @@ import WorkflowsList from './components/WorkflowsList';
 import SchemaShowcase from './components/SchemaShowcase';
 import SchemaShowdown from './components/SchemaShowdown';
 import WorkflowRunner from './components/WorkflowRunner';
+import WorksheetManager from './components/WorksheetManager';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const App: React.FC = () => {
-    const [view, setView] = useState<'home' | 'users' | 'dnaProcesses' | 'workflows' | 'run'>('home');
+    const [view, setView] = useState<'home' | 'users' | 'dnaProcesses' | 'workflows' | 'run' | 'worksheets'>('home');
     const [showWorkflowMenu, setShowWorkflowMenu] = useState(false);
 
     // Always start with Showcase selected on page load
@@ -127,6 +128,14 @@ const App: React.FC = () => {
                         >
                             Run Workflow
                         </button>
+
+                        <button
+                            onClick={() => setView('worksheets')}
+                            aria-pressed={view === 'worksheets'}
+                            className={navButtonClass(view === 'worksheets')}
+                        >
+                            Work on Tasks
+                        </button>
                     </div>
                 </div>
             </nav>
@@ -136,6 +145,7 @@ const App: React.FC = () => {
                 {view === 'dnaProcesses' && <DnaProcessesList />}
                 {view === 'workflows' && <WorkflowsList />}
                 {view === 'run' && <WorkflowRunner />}
+                {view === 'worksheets' && <WorksheetManager />}
                 {view === 'home' && renderHome()}
             </main>
 

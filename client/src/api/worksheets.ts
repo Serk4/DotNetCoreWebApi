@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Worksheet, WorkflowIntersection } from '../types';
 
 const apiBase = (process.env.REACT_APP_API_URL ?? 'https://localhost:7049').replace(/\/$/, '');
 const endpoint = `${apiBase}/api/worksheets`;
@@ -30,8 +31,60 @@ export async function createRunFromWorkflow(payload: CreateRunFromWorkflowPayloa
   }
 }
 
+export async function getPendingWorksheets(analystId?: number): Promise<Worksheet[]> {
+  try {
+    const url = analystId ? `${endpoint}/pending?analystId=${analystId}` : `${endpoint}/pending`;
+    const res = await axios.get(url);
+    return res.data;
+  } catch (e) {
+    handleAxiosError(e);
+  }
+}
+
+export async function getInProgressWorksheets(analystId?: number): Promise<Worksheet[]> {
+  try {
+    const url = analystId ? `${endpoint}/inprogress?analystId=${analystId}` : `${endpoint}/inprogress`;
+    const res = await axios.get(url);
+    return res.data;
+  } catch (e) {
+    handleAxiosError(e);
+  }
+}
+
+export async function startWorksheet(id: number): Promise<any> {
+  try {
+    const res = await axios.post(`${endpoint}/${id}/start`);
+    return res.data;
+  } catch (e) {
+    handleAxiosError(e);
+  }
+}
+
+export async function completeWorksheet(id: number): Promise<any> {
+  try {
+    const res = await axios.post(`${endpoint}/${id}/complete`);
+    return res.data;
+  } catch (e) {
+    handleAxiosError(e);
+  }
+}
+
+export async function getIntersections(): Promise<WorkflowIntersection[]> {
+  try {
+    const res = await axios.get(`${endpoint}/intersections`);
+    return res.data;
+  } catch (e) {
+    handleAxiosError(e);
+  }
+}
+
 const WorksheetsApi = {
-  createRunFromWorkflow
+  createRunFromWorkflow,
+  getPendingWorksheets,
+  getInProgressWorksheets,
+  startWorksheet,
+  completeWorksheet,
+  getIntersections
 };
 
 export default WorksheetsApi;

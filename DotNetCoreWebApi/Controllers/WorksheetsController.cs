@@ -248,5 +248,209 @@ namespace DotNetCoreWebApi.Controllers
 
             return CreatedAtAction(nameof(GetWorksheet), new { id = worksheet.Id }, new { worksheet.Id, worksheet.Status, worksheet.StartAt });
         }
+
+        // POST: api/worksheets/{id}/complete
+        // Mark worksheet as completed and automatically create next worksheet in the workflow
+        [HttpPost("{id:int}/complete")]
+        public async Task<IActionResult> CompleteWorksheet(int id)
+        {
+            var worksheet = await _context.Worksheets
+                .Include(w => w.WorksheetWorkflowGroups)
+                    .ThenInclude(wwg => wwg.WorkflowGroup)
+                        .ThenInclude(wg => wg.Workflow)
+                            .ThenInclude(wf => wf.WorkflowProcesses)
+                                .ThenInclude(wp => wp.DnaProcess)
+                .FirstOrDefaultAsync(w => w.Id == id);
+
+            if (worksheet == null) return NotFound($"Worksheet {id} not found");
+
+            if (worksheet.Status == WorksheetStatus.Completed)
+                return Conflict("Worksheet already completed");
+
+            // Mark as completed
+            worksheet.Status = WorksheetStatus.Completed;
+            await _context.SaveChangesAsync();
+
+            // Find the next process in the workflow and create its worksheet
+            var wwg = worksheet.WorksheetWorkflowGroups.FirstOrDefault();
+            if (wwg != null)
+            {
+                var workflow = wwg.WorkflowGroup.Workflow;
+                var currentStepOrder = wwg.StepOrder;
+                
+                // Find next process in workflow
+                var nextProcess = workflow.WorkflowProcesses
+                    .Where(wp => wp.ProcessOrder > currentStepOrder)
+                    .OrderBy(wp => wp.ProcessOrder)
+                    .FirstOrDefault();
+
+                if (nextProcess != null)
+                {
+                    // Create next worksheet
+                    var nextWorksheet = new Worksheet
+                    {
+                        Name = $"{wwg.WorkflowGroup.RunName} - {nextProcess.DnaProcess.Name}",
+                        AnalystId = worksheet.AnalystId,
+                        DnaProcessId = nextProcess.DnaProcessId,
+                        Status = WorksheetStatus.Pending
+                    };
+                    _context.Worksheets.Add(nextWorksheet);
+                    await _context.SaveChangesAsync();
+
+                    // Link to the same workflow group
+                    var nextWwg = new WorksheetWorkflowGroup
+                    {
+                        WorksheetId = nextWorksheet.Id,
+                        WorkflowGroupId = wwg.WorkflowGroupId,
+                        StepOrder = nextProcess.ProcessOrder
+                    };
+                    _context.WorksheetWorkflowGroups.Add(nextWwg);
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new
+                    {
+                        CompletedWorksheetId = id,
+                        NextWorksheetId = nextWorksheet.Id,
+                        NextWorksheetName = nextWorksheet.Name,
+                        Message = "Worksheet completed and next worksheet created"
+                    });
+                }
+            }
+
+            return Ok(new
+            {
+                CompletedWorksheetId = id,
+                Message = "Worksheet completed (final step in workflow)"
+            });
+        }
+
+        // GET: api/worksheets/pending?analystId={id}
+        // Get pending worksheets for a specific analyst
+        [HttpGet("pending")]
+        public async Task<ActionResult<IEnumerable<object>>> GetPendingWorksheets([FromQuery] int? analystId)
+        {
+            var query = _context.Worksheets
+                .Include(w => w.DnaProcess)
+                .Include(w => w.Analyst)
+                .Include(w => w.WorksheetWorkflowGroups)
+                    .ThenInclude(wwg => wwg.WorkflowGroup)
+                .Where(w => w.Status == WorksheetStatus.Pending);
+
+            if (analystId.HasValue)
+            {
+                query = query.Where(w => w.AnalystId == analystId.Value);
+            }
+
+            var list = await query
+                .Select(w => new
+                {
+                    w.Id,
+                    w.Name,
+                    Analyst = new { w.Analyst.Id, w.Analyst.UserName },
+                    DnaProcess = new { w.DnaProcess.Id, w.DnaProcess.Name },
+                    w.Status,
+                    w.StartAt,
+                    WorkflowGroup = w.WorksheetWorkflowGroups.FirstOrDefault() != null
+                        ? new
+                        {
+                            Id = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.Id,
+                            RunName = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.RunName,
+                            StepOrder = w.WorksheetWorkflowGroups.FirstOrDefault()!.StepOrder
+                        }
+                        : null
+                })
+                .OrderBy(w => w.WorkflowGroup != null ? w.WorkflowGroup.StepOrder : 999)
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
+        // GET: api/worksheets/inprogress?analystId={id}
+        // Get in-progress worksheets for a specific analyst
+        [HttpGet("inprogress")]
+        public async Task<ActionResult<IEnumerable<object>>> GetInProgressWorksheets([FromQuery] int? analystId)
+        {
+            var query = _context.Worksheets
+                .Include(w => w.DnaProcess)
+                .Include(w => w.Analyst)
+                .Include(w => w.WorksheetWorkflowGroups)
+                    .ThenInclude(wwg => wwg.WorkflowGroup)
+                .Where(w => w.Status == WorksheetStatus.InProgress);
+
+            if (analystId.HasValue)
+            {
+                query = query.Where(w => w.AnalystId == analystId.Value);
+            }
+
+            var list = await query
+                .Select(w => new
+                {
+                    w.Id,
+                    w.Name,
+                    Analyst = new { w.Analyst.Id, w.Analyst.UserName },
+                    DnaProcess = new { w.DnaProcess.Id, w.DnaProcess.Name },
+                    w.Status,
+                    w.StartAt,
+                    WorkflowGroup = w.WorksheetWorkflowGroups.FirstOrDefault() != null
+                        ? new
+                        {
+                            Id = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.Id,
+                            RunName = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.RunName,
+                            StepOrder = w.WorksheetWorkflowGroups.FirstOrDefault()!.StepOrder
+                        }
+                        : null
+                })
+                .OrderBy(w => w.StartAt)
+                .ToListAsync();
+
+            return Ok(list);
+        }
+
+        // GET: api/worksheets/intersections
+        // Find potential workflow intersections where multiple worksheets use the same DNA process
+        [HttpGet("intersections")]
+        public async Task<ActionResult<IEnumerable<object>>> GetWorkflowIntersections()
+        {
+            // Find worksheets that are pending or in progress with the same DNA process
+            var worksheets = await _context.Worksheets
+                .Include(w => w.DnaProcess)
+                .Include(w => w.Analyst)
+                .Include(w => w.WorksheetWorkflowGroups)
+                    .ThenInclude(wwg => wwg.WorkflowGroup)
+                        .ThenInclude(wg => wg.Workflow)
+                .Where(w => w.Status == WorksheetStatus.Pending || w.Status == WorksheetStatus.InProgress)
+                .ToListAsync();
+
+            // Group by DNA process to find intersections
+            var intersections = worksheets
+                .GroupBy(w => w.DnaProcessId)
+                .Where(g => g.Count() > 1) // Only processes with multiple worksheets
+                .Select(g => new
+                {
+                    DnaProcessId = g.Key,
+                    DnaProcessName = g.First().DnaProcess.Name,
+                    WorksheetCount = g.Count(),
+                    Worksheets = g.Select(w => new
+                    {
+                        w.Id,
+                        w.Name,
+                        Analyst = new { w.Analyst.Id, w.Analyst.UserName },
+                        w.Status,
+                        w.StartAt,
+                        WorkflowGroup = w.WorksheetWorkflowGroups.FirstOrDefault() != null
+                            ? new
+                            {
+                                Id = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.Id,
+                                RunName = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.RunName,
+                                WorkflowName = w.WorksheetWorkflowGroups.FirstOrDefault()!.WorkflowGroup.Workflow.Name
+                            }
+                            : null
+                    }).ToList(),
+                    PotentialSavings = "Can batch process multiple samples together"
+                })
+                .ToList();
+
+            return Ok(intersections);
+        }
     }
 }

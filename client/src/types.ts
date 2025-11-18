@@ -24,3 +24,32 @@ export interface Workflow {
     createdByUser?: User | null;
     workflowProcesses?: WorkflowProcess[];
 }
+
+export enum WorksheetStatus {
+    Pending = 0,
+    InProgress = 1,
+    Completed = 2
+}
+
+export interface Worksheet {
+    id: number;
+    name: string;
+    analyst: { id: number; userName: string };
+    dnaProcess: { id: number; name: string };
+    status: WorksheetStatus;
+    startAt?: string | null;
+    workflowGroup?: {
+        id: number;
+        runName: string;
+        stepOrder?: number;
+        workflowName?: string;
+    } | null;
+}
+
+export interface WorkflowIntersection {
+    dnaProcessId: number;
+    dnaProcessName: string;
+    worksheetCount: number;
+    worksheets: Worksheet[];
+    potentialSavings: string;
+}
