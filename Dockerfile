@@ -2,8 +2,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
+COPY ["DotNetCoreWebApi/DotNetCoreWebApi.csproj", "DotNetCoreWebApi/"]
+COPY ["DotNetCoreWebApi.Data/DotNetCoreWebApi.Data.csproj", "DotNetCoreWebApi.Data/"]
+COPY ["DotNetCoreWebApi.Models/DotNetCoreWebApi.Models.csproj", "DotNetCoreWebApi.Models/"]
+COPY ["DotNetCoreWebApi.Utility/DotNetCoreWebApi.Utility.csproj", "DotNetCoreWebApi.Utility/"]
+RUN dotnet restore "./DotNetCoreWebApi/DotNetCoreWebApi.csproj"
+
 COPY . .
-RUN dotnet publish ./DotNetCoreWebApi/DotNetCoreWebApi.csproj -c Release -o /app/publish
+RUN dotnet publish "./DotNetCoreWebApi/DotNetCoreWebApi.csproj" -c Release -o /app/publish --no-restore
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
