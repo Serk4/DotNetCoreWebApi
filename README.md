@@ -37,6 +37,16 @@ The repository includes a React frontend in the `/client` folder to showcase API
   - Benchmarks optimized (single query with includes/projections) vs. naive (N+1 queries) approaches
   - Displays metrics: duration, workflow count, process links
   - Demonstrates real-world performance gains of normalized design
+- **Worksheet Manager**: Comprehensive worksheet lifecycle management
+  - View pending and in-progress worksheets for selected analysts
+  - Start worksheets to begin DNA process work (creates process-specific records)
+  - Complete worksheets to mark steps finished (auto-creates next step in workflow)
+  - Discover workflow intersections showing where multiple workflows share DNA processes
+  - Visualize cost-saving opportunities by batching samples at intersection points
+- **Workflow Runner**: Create workflow runs from templates
+  - Select a workflow template and analyst to generate a complete run
+  - Automatically creates worksheets for each step in the workflow sequence
+  - Links all worksheets to a WorkflowGroup for coordinated execution
 
 ### How to Run the Frontend
 1. **Install Dependencies** (in repo root):
@@ -50,7 +60,7 @@ npm install
 
 3. **Tech**: Create React App with TypeScript, Axios for API calls, Mermaid.js for diagrams. Expandable for full UI (e.g., workflow builder).
 
-See `/client/src/App.tsx` for the main component, `/client/src/components/SchemaShowcase.jsx` for the interactive demo, and `/client/src/components/SchemaShowdown.jsx` for the performance comparison.
+See `/client/src/App.tsx` for the main component, `/client/src/components/SchemaShowcase.jsx` for the interactive demo, `/client/src/components/SchemaShowdown.jsx` for the performance comparison, `/client/src/components/WorksheetManager.tsx` for worksheet lifecycle management, and `/client/src/components/WorkflowRunner.tsx` for creating workflow runs.
 
 ## Schema Overview
 The core is a hierarchical model:
@@ -96,6 +106,15 @@ All at `/api/{controller}` (e.g., `/api/workflows`). Test in Swagger at `/swagge
 | | PUT | /workflows/{id} | Update workflow. |
 | | DELETE | /workflows/{id} | Delete workflow. |
 | **WorkflowGroups** | GET | /workflowgroups/{id}/report | Ordered report of run (worksheets + processes). |
+| **Worksheets** | GET | /worksheets | List all worksheets with analyst and DNA process info. |
+| | GET | /worksheets/{id} | Get worksheet by Id. |
+| | POST | /worksheets | Create single worksheet (e.g., {"name": "Test", "analystId": 1, "dnaProcessId": 1}). |
+| | POST | /worksheets/run | Create workflow run—generates WorkflowGroup and worksheets from template (e.g., {"runName": "Run1", "workflowId": 1, "analystId": 2}). |
+| | POST | /worksheets/{id}/start | Start worksheet—sets status to InProgress and creates process-specific record (Extraction/Amplification/Quantification). |
+| | POST | /worksheets/{id}/complete | Complete worksheet—marks as Completed and auto-creates next worksheet in workflow sequence. |
+| | GET | /worksheets/pending?analystId={id} | Get pending worksheets, optionally filtered by analyst. |
+| | GET | /worksheets/inprogress?analystId={id} | Get in-progress worksheets, optionally filtered by analyst. |
+| | GET | /worksheets/intersections | Find workflow intersections—identifies DNA processes shared by multiple pending/in-progress worksheets for batching optimization. |
 | **Diag** | GET | /diag/mermaid | Returns mermaid diagram syntax for legacy vs. normalized schemas. |
 | | GET | /diag/showdown | Performance benchmark: optimized (single query) vs. naive (N+1) query patterns. |
 | | DELETE | /diag/workflow/{id} | Safe workflow deletion demo—removes dependent WorkflowProcesses first. |
