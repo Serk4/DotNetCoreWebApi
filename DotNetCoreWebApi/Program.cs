@@ -16,8 +16,22 @@ builder.Services.AddSwaggerGen(c =>
 {
    c.SwaggerDoc("v1", new() { Title = "DNA Workflow API", Version = "v1" });
 });
+string ConvertDatabaseUrl(string url)
+{
+    var uri = new Uri(url);
+    var userInfo = uri.UserInfo.Split(':');
+
+    return $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+}
+
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+var connectionString = ConvertDatabaseUrl(databaseUrl);
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
+
+//builder.Services.AddDbContext<ApplicationDbContext>(options =>
+//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddCors(options => {
     options.AddDefaultPolicy(policy => policy

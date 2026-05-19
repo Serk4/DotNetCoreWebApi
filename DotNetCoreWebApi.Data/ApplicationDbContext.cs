@@ -107,9 +107,15 @@ public class ApplicationDbContext : DbContext
         );
 
         modelBuilder.Entity<Worksheet>().HasData(
-            new Worksheet { Id = 1, Name = "Process 1 Worksheet", AnalystId = 4, DnaProcessId = 1, Status = WorksheetStatus.Completed, StartAt = new DateTime(2025, 10, 17) },
-            new Worksheet { Id = 2, Name = "Process 2 Worksheet", AnalystId = 4, DnaProcessId = 2, Status = WorksheetStatus.Completed, StartAt = new DateTime(2025, 10, 17) },
-            new Worksheet { Id = 3, Name = "Process 3 Worksheet", AnalystId = 4, DnaProcessId = 3, Status = WorksheetStatus.Completed, StartAt = new DateTime(2025, 10, 17) }
+            new Worksheet { Id = 1, Name = "Process 1 Worksheet", AnalystId = 4, DnaProcessId = 1, Status = WorksheetStatus.Completed,
+                StartAt = DateTime.SpecifyKind(new DateTime(2025, 10, 17), DateTimeKind.Utc)
+            },
+            new Worksheet { Id = 2, Name = "Process 2 Worksheet", AnalystId = 4, DnaProcessId = 2, Status = WorksheetStatus.Completed,
+                StartAt = DateTime.SpecifyKind(new DateTime(2025, 10, 17), DateTimeKind.Utc)
+            },
+            new Worksheet { Id = 3, Name = "Process 3 Worksheet", AnalystId = 4, DnaProcessId = 3, Status = WorksheetStatus.Completed,
+                StartAt = DateTime.SpecifyKind(new DateTime(2025, 10, 17), DateTimeKind.Utc)
+            }
         );
 
         modelBuilder.Entity<WorksheetWorkflowGroup>().HasData(

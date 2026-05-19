@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -7,7 +9,7 @@
 namespace DotNetCoreWebApi.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreateFinal : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,11 +18,11 @@ namespace DotNetCoreWebApi.Data.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    UserType = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    Email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    UserType = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,10 +33,10 @@ namespace DotNetCoreWebApi.Data.Migrations
                 name: "DnaProcesses",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    CreatedBy = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -44,17 +46,17 @@ namespace DotNetCoreWebApi.Data.Migrations
                         column: x => x.CreatedBy,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Workflows",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    CreatedBy = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    CreatedBy = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -64,18 +66,20 @@ namespace DotNetCoreWebApi.Data.Migrations
                         column: x => x.CreatedBy,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Worksheets",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    AnalystId = table.Column<int>(type: "int", nullable: false),
-                    DnaProcessId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    AnalystId = table.Column<int>(type: "integer", nullable: false),
+                    DnaProcessId = table.Column<int>(type: "integer", nullable: false),
+                    StartAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -84,23 +88,22 @@ namespace DotNetCoreWebApi.Data.Migrations
                         name: "FK_Worksheets_DnaProcesses_DnaProcessId",
                         column: x => x.DnaProcessId,
                         principalTable: "DnaProcesses",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);  // Explicit: No cascade
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Worksheets_Users_AnalystId",
                         column: x => x.AnalystId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);  // Explicit: No cascade
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "WorkflowGroups",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorkflowId = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorkflowId = table.Column<int>(type: "integer", nullable: false),
+                    RunName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -110,18 +113,18 @@ namespace DotNetCoreWebApi.Data.Migrations
                         column: x => x.WorkflowId,
                         principalTable: "Workflows",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
                 name: "WorkflowProcesses",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorkflowId = table.Column<int>(type: "int", nullable: false),
-                    DnaProcessId = table.Column<int>(type: "int", nullable: false),
-                    ProcessOrder = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorkflowId = table.Column<int>(type: "integer", nullable: false),
+                    DnaProcessId = table.Column<int>(type: "integer", nullable: false),
+                    ProcessOrder = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -131,24 +134,24 @@ namespace DotNetCoreWebApi.Data.Migrations
                         column: x => x.DnaProcessId,
                         principalTable: "DnaProcesses",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_WorkflowProcesses_Workflows_WorkflowId",
                         column: x => x.WorkflowId,
                         principalTable: "Workflows",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Amplifications",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorksheetId = table.Column<int>(type: "int", nullable: false),
-                    Prop1 = table.Column<int>(type: "int", nullable: false),
-                    Prop2 = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorksheetId = table.Column<int>(type: "integer", nullable: false),
+                    Prop1 = table.Column<int>(type: "integer", nullable: false),
+                    Prop2 = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -157,19 +160,18 @@ namespace DotNetCoreWebApi.Data.Migrations
                         name: "FK_Amplifications_Worksheets_WorksheetId",
                         column: x => x.WorksheetId,
                         principalTable: "Worksheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);  // Explicit: No cascade
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "Extractions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorksheetId = table.Column<int>(type: "int", nullable: false),
-                    Prop1 = table.Column<int>(type: "int", nullable: false),
-                    Prop2 = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorksheetId = table.Column<int>(type: "integer", nullable: false),
+                    Prop1 = table.Column<int>(type: "integer", nullable: false),
+                    Prop2 = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -178,19 +180,18 @@ namespace DotNetCoreWebApi.Data.Migrations
                         name: "FK_Extractions_Worksheets_WorksheetId",
                         column: x => x.WorksheetId,
                         principalTable: "Worksheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);  // Explicit: No cascade
-        });
+                        principalColumn: "Id");
+                });
 
             migrationBuilder.CreateTable(
                 name: "Quantifications",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorksheetId = table.Column<int>(type: "int", nullable: false),
-                    Prop1 = table.Column<int>(type: "int", nullable: false),
-                    Prop2 = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorksheetId = table.Column<int>(type: "integer", nullable: false),
+                    Prop1 = table.Column<int>(type: "integer", nullable: false),
+                    Prop2 = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -199,19 +200,18 @@ namespace DotNetCoreWebApi.Data.Migrations
                         name: "FK_Quantifications_Worksheets_WorksheetId",
                         column: x => x.WorksheetId,
                         principalTable: "Worksheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);  // Explicit: No cascade
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "WorksheetWorkflowGroups",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    WorksheetId = table.Column<int>(type: "int", nullable: false),
-                    WorkflowGroupId = table.Column<int>(type: "int", nullable: false),
-                    StepOrder = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorksheetId = table.Column<int>(type: "integer", nullable: false),
+                    WorkflowGroupId = table.Column<int>(type: "integer", nullable: false),
+                    StepOrder = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -220,14 +220,12 @@ namespace DotNetCoreWebApi.Data.Migrations
                         name: "FK_WorksheetWorkflowGroups_WorkflowGroups_WorkflowGroupId",
                         column: x => x.WorkflowGroupId,
                         principalTable: "WorkflowGroups",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);  // Explicit: No cascade
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_WorksheetWorkflowGroups_Worksheets_WorksheetId",
                         column: x => x.WorksheetId,
                         principalTable: "Worksheets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);  // Explicit: No cascade
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.InsertData(
@@ -258,8 +256,8 @@ namespace DotNetCoreWebApi.Data.Migrations
 
             migrationBuilder.InsertData(
                 table: "WorkflowGroups",
-                columns: new[] { "Id", "WorkflowId" },
-                values: new object[] { 1, 1 });
+                columns: new[] { "Id", "RunName", "WorkflowId" },
+                values: new object[] { 1, "Default Run", 1 });
 
             migrationBuilder.InsertData(
                 table: "WorkflowProcesses",
@@ -273,12 +271,12 @@ namespace DotNetCoreWebApi.Data.Migrations
 
             migrationBuilder.InsertData(
                 table: "Worksheets",
-                columns: new[] { "Id", "AnalystId", "DnaProcessId", "Name" },
+                columns: new[] { "Id", "AnalystId", "DnaProcessId", "Name", "StartAt", "Status" },
                 values: new object[,]
                 {
-                    { 1, 4, 1, "Process 1 Worksheet" },
-                    { 2, 4, 2, "Process 2 Worksheet" },
-                    { 3, 4, 3, "Process 3 Worksheet" }
+                    { 1, 4, 1, "Process 1 Worksheet", new DateTime(2025, 10, 17, 0, 0, 0, 0, DateTimeKind.Utc), 2 },
+                    { 2, 4, 2, "Process 2 Worksheet", new DateTime(2025, 10, 17, 0, 0, 0, 0, DateTimeKind.Utc), 2 },
+                    { 3, 4, 3, "Process 3 Worksheet", new DateTime(2025, 10, 17, 0, 0, 0, 0, DateTimeKind.Utc), 2 }
                 });
 
             migrationBuilder.InsertData(
