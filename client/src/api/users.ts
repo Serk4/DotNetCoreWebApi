@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { User } from '../types';
 
-const apiBase = (process.env.REACT_APP_API_URL ?? 'https://localhost:7049').replace(/\/$/, '');
-const usersEndpoint = `${apiBase}/api/users`;
+const apiBase = (process.env.REACT_APP_API_BASE ?? 'https://localhost:7049/api').replace(/\/$/, '');
+const usersEndpoint = `${apiBase}/users`;
 
 type CreateUserPayload = Omit<User, 'id'>;
 type UpdateUserPayload = Partial<Omit<User, 'id'>> & { id: number };

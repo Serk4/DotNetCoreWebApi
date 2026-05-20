@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { Workflow } from '../types';
 
-const apiBase = (process.env.REACT_APP_API_URL ?? 'https://localhost:7049').replace(/\/$/, '');
-const workflowsEndpoint = `${apiBase}/api/workflows`;
+const apiBase = (process.env.REACT_APP_API_BASE ?? 'https://localhost:7049/api').replace(/\/$/, '');
+const workflowsEndpoint = `${apiBase}/workflows`;
 
 type CreateWorkflowPayload = { name: string; createdBy: number };
 type UpdateWorkflowPayload = CreateWorkflowPayload & { id: number };

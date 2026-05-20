@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { Worksheet, WorkflowIntersection, WorksheetStatus } from '../types';
 
-const apiBase = (process.env.REACT_APP_API_URL ?? 'https://localhost:7049').replace(/\/$/, '');
-const endpoint = `${apiBase}/api/worksheets`;
+const apiBase = (process.env.REACT_APP_API_BASE ?? 'https://localhost:7049/api').replace(/\/$/, '');
+const endpoint = `${apiBase}/worksheets`;
 
 function handleAxiosError(e: unknown): never {
   if (axios.isAxiosError(e)) {
