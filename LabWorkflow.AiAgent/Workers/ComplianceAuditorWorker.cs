@@ -9,7 +9,7 @@ namespace LabWorkflow.AiAgent.Workers;
 /// <summary>
 /// Background service that periodically audits recently updated Worksheets
 /// for compliance violations, out-of-bounds metrics, and SOP adherence using
-/// Microsoft Semantic Kernel and an OpenAI language model.
+/// Microsoft Semantic Kernel and a Groq language model.
 /// </summary>
 public sealed class ComplianceAuditorWorker : BackgroundService
 {

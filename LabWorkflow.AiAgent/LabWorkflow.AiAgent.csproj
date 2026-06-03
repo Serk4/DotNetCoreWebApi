@@ -11,10 +11,11 @@
     <!--
       Microsoft.SemanticKernel is the meta-package that bundles:
         - Microsoft.SemanticKernel.Core
-        - Microsoft.SemanticKernel.Connectors.OpenAI  (GPT-4o, GPT-4, GPT-3.5-turbo …)
-      To target Azure OpenAI instead, swap the AddOpenAIChatCompletion call in
-      Program.cs for AddAzureOpenAIChatCompletion and add:
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" Version="1.30.0" />
+        - Microsoft.SemanticKernel.Connectors.OpenAI  (used here via Groq's
+          OpenAI-compatible API — no extra connector package required)
+      The OpenAI client's Endpoint property is pointed at:
+        https://api.groq.com/openai/v1
+      Free Groq API keys: https://console.groq.com/keys
     -->
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.30.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
