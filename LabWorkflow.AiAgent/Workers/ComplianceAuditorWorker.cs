@@ -67,7 +67,7 @@ public sealed class ComplianceAuditorWorker : BackgroundService
         await using var scope = _scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        var cutoff = DateTime.UtcNow.Subtract(_lookbackWindow);
+        var cutoff = DateTime.UtcNow - _lookbackWindow;
 
         // Fetch worksheets that are InProgress or were recently started/completed.
         var worksheets = await db.Worksheets

@@ -53,5 +53,9 @@ static string ConvertDatabaseUrl(string url)
 {
     var uri      = new Uri(url);
     var userInfo = uri.UserInfo.Split(':');
+    if (userInfo.Length < 2)
+        throw new InvalidOperationException(
+            $"DATABASE_URL is malformed: expected 'postgres://user:Password@host/db' format.");
     return $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 }
+
