@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>lab-workflow-ai-agent</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Microsoft.SemanticKernel is the meta-package that bundles:
+        - Microsoft.SemanticKernel.Core
+        - Microsoft.SemanticKernel.Connectors.OpenAI  (GPT-4o, GPT-4, GPT-3.5-turbo …)
+      To target Azure OpenAI instead, swap the AddOpenAIChatCompletion call in
+      Program.cs for AddAzureOpenAIChatCompletion and add:
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.AzureOpenAI" Version="1.30.0" />
+    -->
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.30.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DotNetCoreWebApi.Models\DotNetCoreWebApi.Models.csproj" />
+    <ProjectReference Include="..\DotNetCoreWebApi.Data\DotNetCoreWebApi.Data.csproj" />
+  </ItemGroup>
+
+</Project>
