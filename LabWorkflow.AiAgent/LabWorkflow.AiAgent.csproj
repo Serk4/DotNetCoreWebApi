@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>lab-workflow-ai-agent</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Microsoft.SemanticKernel is the meta-package that bundles:
+        - Microsoft.SemanticKernel.Core
+        - Microsoft.SemanticKernel.Connectors.OpenAI  (used here via Groq's
+          OpenAI-compatible API — no extra connector package required)
+      The OpenAI client's Endpoint property is pointed at:
+        https://api.groq.com/openai/v1
+      Free Groq API keys: https://console.groq.com/keys
+    -->
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.30.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DotNetCoreWebApi.Models\DotNetCoreWebApi.Models.csproj" />
+    <ProjectReference Include="..\DotNetCoreWebApi.Data\DotNetCoreWebApi.Data.csproj" />
+  </ItemGroup>
+
+</Project>
